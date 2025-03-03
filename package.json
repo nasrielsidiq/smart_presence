@@ -1,0 +1,26 @@
+{
+  "name": "smart_presence_api",
+  "version": "1.0.0",
+  "description": "",
+  "keywords": [
+    "smart_presence_iot"
+  ],
+  "homepage": "https://github.com/nasrielsidiq/smart_presence#readme",
+  "bugs": {
+    "url": "https://github.com/nasrielsidiq/smart_presence/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nasrielsidiq/smart_presence.git"
+  },
+  "license": "ISC",
+  "author": "mucaa",
+  "type": "commonjs",
+  "main": "src/app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "express": "^4.21.2"
+  }
+}
