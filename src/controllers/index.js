@@ -1,11 +1,18 @@
+import pool from '../db.js';
+
 class IndexController {
-    getHello(req, res) {
-        res.json({ message: "Hello, World!" });
+    async home(req, res) {
+        res.send('Welcome to the API');
     }
 
-    getGoodbye(req, res) {
-        res.json({ message: "Goodbye, World!" });
+    async getData(req, res) {
+        try {
+            const [rows] = await pool.query('SELECT * FROM your_table');
+            res.json(rows);
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
     }
 }
 
-module.exports = IndexController;
+export default IndexController;
