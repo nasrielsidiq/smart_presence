@@ -12,7 +12,7 @@ class User {
 
     static async findAll() {
         const [rows] = await pool.query('SELECT * FROM users');
-        return rows;
+        return rows; 
     }
 
     static async findById(id) {
