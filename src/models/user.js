@@ -2,10 +2,10 @@ const pool = require('../db.js');
 
 class User {
     static async create(user) {
-        const { username, email, password, serial_id, no_hp, privilege } = user;
+        const { username, email, password, serial_id, no_hp, privilage } = user;
         const [result] = await pool.query(
-            'INSERT INTO users (username, email, password, serial_id, no_hp, privilege, created_at) VALUES (?, ?, ?, ?, ?, ?, NOW())',
-            [username, email, password, serial_id, no_hp, privilege]
+            'INSERT INTO users (username, email, password, serial_id, no_hp, privilage, created_at) VALUES (?, ?, ?, ?, ?, ?, NOW())',
+            [username, email, password, serial_id, no_hp, privilage]
         );
         return result.insertId;
     }
@@ -21,10 +21,10 @@ class User {
     }
 
     static async update(id, user) {
-        const { username, email, password, serial_id, no_hp, privilege } = user;
+        const { username, email, password, serial_id, no_hp, privilage } = user;
         await pool.query(
-            'UPDATE users SET username = ?, email = ?, password = ?, serial_id = ?, no_hp = ?, privilege = ? WHERE id = ?',
-            [username, email, password, serial_id, no_hp, privilege, id]
+            'UPDATE users SET username = ?, email = ?, password = ?, serial_id = ?, no_hp = ?, privilage = ? WHERE id = ?',
+            [username, email, password, serial_id, no_hp, privilage, id]
         );
     }
 
