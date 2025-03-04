@@ -1,4 +1,4 @@
-export default {
+module.exports = {
   User: {
     name: String,
     email: String,

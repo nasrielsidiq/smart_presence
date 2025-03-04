@@ -1,4 +1,4 @@
-import pool from '../db.js';
+const pool = require('../db.js');
 
 class IndexController {
     async home(req, res) {
@@ -15,4 +15,4 @@ class IndexController {
     }
 }
 
-export default IndexController;
+module.exports = IndexController;

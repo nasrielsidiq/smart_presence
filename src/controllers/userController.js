@@ -1,5 +1,4 @@
-// filepath: /home/muca/Codes/Express/Smart_Presence_API/src/controllers/userController.js
-import User from '../models/user.js';
+const User = require('../models/user.js');
 
 class UserController {
     async createUser(req, res) {
@@ -52,4 +51,4 @@ class UserController {
     }
 }
 
-export default UserController;
+module.exports = UserController;

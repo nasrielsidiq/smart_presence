@@ -1,12 +1,12 @@
-import express from 'express';
-import IndexController from '../controllers/index.js';
-import UserController from '../controllers/userController.js';
+const express = require('express');
+const IndexController = require('../controllers/index.js');
+const UserController = require('../controllers/userController.js');
 
 const router = express.Router();
 const indexController = new IndexController();
 const userController = new UserController();
 
-export function setRoutes(app) {
+function setRoutes(app) {
     app.use('/api', router);
     
     router.get('/', indexController.home);
@@ -19,3 +19,5 @@ export function setRoutes(app) {
     router.put('/users/:id', userController.updateUser);
     router.delete('/users/:id', userController.deleteUser);
 }
+
+module.exports = { setRoutes };

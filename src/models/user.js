@@ -1,5 +1,4 @@
-// filepath: /home/muca/Codes/Express/Smart_Presence_API/src/models/user.js
-import pool from '../db.js';
+const pool = require('../db.js');
 
 class User {
     static async create(user) {
@@ -34,4 +33,4 @@ class User {
     }
 }
 
-export default User;
+module.exports = User;
