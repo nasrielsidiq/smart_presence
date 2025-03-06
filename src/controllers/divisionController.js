@@ -34,7 +34,13 @@ class DivisionController {
 
     async updateDivision(req, res) {
         try {
-            await Division.update(req.params.id, req.body);
+
+            const success = await Division.update(req.params.id, req.body);
+            if(!success) {
+                res.status(404).json({ error: 'Division not found' });
+                return;
+            }
+            
             res.json({ message: 'Division updated successfully' });
         } catch (error) {
             res.status(500).json({ error: error.message });
@@ -43,12 +49,18 @@ class DivisionController {
 
     async deleteDivision(req, res) {
         try {
-            await Division.delete(req.params.id);
+            const success = await Division.delete(req.params.id);
+
+            if(!success) {
+                res.status(404).json({ error: 'Division not found' });
+                return;
+            }
             res.json({ message: 'Division deleted successfully' });
         } catch (error) {
             res.status(500).json({ error: error.message });
         }
     }
 }
+
 
 module.exports = DivisionController;

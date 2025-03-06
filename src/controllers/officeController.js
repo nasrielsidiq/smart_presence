@@ -34,7 +34,12 @@ class OfficeController {
 
     async updateOffice(req, res) {
         try {
-            await Office.update(req.params.id, req.body);
+            const status = await Office.update(req.params.id, req.body);
+
+            if (!status) {
+                res.status(404).json({ error: 'Office not found' });
+                return;
+            }
             res.json({ message: 'Office updated successfully' });
         } catch (error) {
             res.status(500).json({ error: error.message });
@@ -43,7 +48,12 @@ class OfficeController {
 
     async deleteOffice(req, res) {
         try {
-            await Office.delete(req.params.id);
+            const status = await Office.delete(req.params.id);
+
+            if(!status){
+                res.status(404).json({ error: 'Office not found' });
+                return;
+            }
             res.json({ message: 'Office deleted successfully' });
         } catch (error) {
             res.status(500).json({ error: error.message });

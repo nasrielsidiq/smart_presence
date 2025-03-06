@@ -3,12 +3,14 @@ const IndexController = require('../controllers/index.js');
 const UserController = require('../controllers/userController.js');
 const OfficeController = require('../controllers/officeController.js');
 const DivisionController = require('../controllers/divisionController.js');
+const EmployeeController = require('../controllers/employeeController');
 
 const router = express.Router();
 const indexController = new IndexController();
 const userController = new UserController();
 const officeController = new OfficeController();
 const divisionController = new DivisionController();
+const employeeController = new EmployeeController();
 
 function setRoutes(app) {
     app.use('/api', router);
@@ -36,6 +38,13 @@ function setRoutes(app) {
     router.get('/divisions/:id', divisionController.getDivisionById);
     router.put('/divisions/:id', divisionController.updateDivision);
     router.delete('/divisions/:id', divisionController.deleteDivision);
+
+    // Employee CRUD routes
+    router.post('/employees', employeeController.create);
+    router.get('/employees', employeeController.findAll);
+    router.get('/employees/:id', employeeController.findById);
+    router.put('/employees/:id', employeeController.update);
+    router.delete('/employees/:id', employeeController.delete);
 }
 
 module.exports = { setRoutes };

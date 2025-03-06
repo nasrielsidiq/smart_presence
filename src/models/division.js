@@ -21,15 +21,28 @@ class Division {
     }
 
     static async update(id, division) {
-        const { office_id, name } = division;
-        await pool.query(
-            'UPDATE divisions SET office_id = ?, name = ? WHERE id = ?',
-            [office_id, name, id]
-        );
+        try{
+            const { office_id, name } = division;
+            const [update] = await pool.query(
+                'UPDATE divisions SET office_id = ?, name = ? WHERE id = ?',
+                [office_id, name, id]
+            );
+            return update.affectedRows > 0;
+        }catch(error){
+            console.error('Error updating division:', error);
+            throw new Error('Failed to update division');
+        }
     }
 
     static async delete(id) {
-        await pool.query('DELETE FROM divisions WHERE id = ?', [id]);
+        try{
+            const [result] = await pool.query('DELETE FROM divisions WHERE id = ?', [id]);
+            console.log(result.affectedRows > 0);
+            return result.affectedRows > 0;
+        }catch(error){
+            console.error('Error deleting division:', error);
+            throw new Error('Failed to delete division');
+        }
     }
 }
 

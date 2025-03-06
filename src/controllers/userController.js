@@ -34,7 +34,13 @@ class UserController {
 
     async updateUser(req, res) {
         try {
-            await User.update(req.params.id, req.body);
+            const status = await User.update(req.params.id, req.body);
+
+            if (!status) {
+                res.status(404).json({ error: 'User not found' });
+                return;
+            }
+
             res.json({ message: 'User updated successfully' });
         } catch (error) {
             res.status(500).json({ error: error.message });
@@ -43,7 +49,11 @@ class UserController {
 
     async deleteUser(req, res) {
         try {
-            await User.delete(req.params.id);
+            const status = await User.delete(req.params.id);
+            if(!status){
+                res.status(404).json({ error: 'User not found' });
+                return;
+            }
             res.json({ message: 'User deleted successfully' });
         } catch (error) {
             res.status(500).json({ error: error.message });
