@@ -7,6 +7,7 @@ const OfficeController = require('../controllers/officeController.js');
 const DivisionController = require('../controllers/divisionController.js');
 const EmployeeController = require('../controllers/employeeController');
 const AuthController = require('../controllers/authController');
+const AttendanceController = require('../controllers/attendanceController');
 
 const validateEmployee = require('../validators/employeeValidator');
 const validateUser = require('../validators/userValidator');
@@ -20,6 +21,7 @@ const officeController = new OfficeController();
 const divisionController = new DivisionController();
 const employeeController = new EmployeeController();
 const authController = new AuthController();
+const attendanceController = new AttendanceController();
 
 const handleValidationErrors = (req, res, next) => {
     const errors = validationResult(req);
@@ -70,6 +72,12 @@ function setRoutes(app) {
     router.get('/employees/:id', employeeController.findById);
     router.put('/employees/:id', validateEmployee, handleValidationErrors, employeeController.update);
     router.delete('/employees/:id', employeeController.delete);
+
+    // Attendance routes
+    router.post('/attendances', attendanceController.attendancebySerialid);
+
+    router.get('/attendances', attendanceController.getAttendances);
+    router.get('/attendance/:id', attendanceController.checkEmployeeAttendance);
 }
 
 module.exports = { setRoutes };

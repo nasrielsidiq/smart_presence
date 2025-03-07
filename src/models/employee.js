@@ -19,6 +19,10 @@ class Employee {
         const [rows] = await pool.query('SELECT * FROM employees WHERE id = ?', [id]);
         return rows[0];
     }
+    static async findBySerialId(id) {
+        const [rows] = await pool.query('SELECT * FROM employees WHERE serial_id = ?', [id]);
+        return rows[0];
+    }
 
     static async update(id, employee) {
         try{
