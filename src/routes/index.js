@@ -8,6 +8,7 @@ const DivisionController = require('../controllers/divisionController.js');
 const EmployeeController = require('../controllers/employeeController');
 const AuthController = require('../controllers/authController');
 const AttendanceController = require('../controllers/attendanceController');
+const DashboardController = require('../controllers/dashboardController.js');
 
 const validateEmployee = require('../validators/employeeValidator');
 const validateUser = require('../validators/userValidator');
@@ -22,6 +23,7 @@ const divisionController = new DivisionController();
 const employeeController = new EmployeeController();
 const authController = new AuthController();
 const attendanceController = new AttendanceController();
+const dashboardController = new DashboardController();
 
 const handleValidationErrors = (req, res, next) => {
     const errors = validationResult(req);
@@ -75,9 +77,11 @@ function setRoutes(app) {
 
     // Attendance routes
     router.post('/attendances', attendanceController.attendancebySerialid);
-
     router.get('/attendances', attendanceController.getAttendances);
     router.get('/attendance/:id', attendanceController.checkEmployeeAttendance);
+
+    // Dashboard Routes
+    router.get('/dashboard', dashboardController.index);
 }
 
 module.exports = { setRoutes };

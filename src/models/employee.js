@@ -48,6 +48,11 @@ class Employee {
             throw new Error('Failed to delete employee'); // ✅ Lempar error agar bisa ditangkap di controller
         }
     }
+
+    static async totalEmployee() {
+        const [rows] = await pool.query('SELECT COUNT(*) as total FROM employees');
+        return rows[0].total;
+    }
 }
 
 module.exports = Employee;

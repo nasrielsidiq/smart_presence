@@ -67,6 +67,26 @@ class Attendance {
         return rows;
     }
 
+
+    static async totalOnTime() {    
+        const [rows] = await pool.query('SELECT COUNT(*) as total FROM attendance WHERE status_check_in = "on_time" AND status_check_out = "on_time"');
+        return rows[0].total;
+    }
+
+    static async totalLate() {
+        const [rows] = await pool.query('SELECT COUNT(*) as total FROM attendance WHERE status_check_in = "late" OR status_check_out = "late"');
+        return rows[0].total;
+    }
+
+    // static async totalOnLeave() {
+    //     const [rows] = await pool.query('SELECT COUNT(*) as total FROM attendance WHERE status_check_in = "on_leave" OR status_check_out = "on_leave"');
+    //     return rows[0].total;
+    // }
+
+    static async totalAbcent() {
+        const [rows] = await pool.query('SELECT COUNT(*) as total FROM attendance');
+        return rows[0].total;
+    }
 }
 
 module.exports = Attendance;
