@@ -20,6 +20,11 @@ class User {
         return rows[0];
     }
 
+    static async findByUsername(username) {
+        const [rows] = await pool.query('SELECT * FROM users WHERE username = ?', [username]);
+        return rows[0];
+    }
+
     static async update(id, user) {
         try{
             const { username, email, password, serial_id, no_hp, privilage } = user;
@@ -43,8 +48,10 @@ class User {
             console.error('Error deleting user:', error);
             throw new Error('Failed to delete user');
         }
-        
+
     }
+
+    
 }
 
 module.exports = User;

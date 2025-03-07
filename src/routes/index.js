@@ -1,10 +1,12 @@
 const express = require('express');
+const cors = require('cors');
 const { validationResult } = require('express-validator');
 const IndexController = require('../controllers/index.js');
 const UserController = require('../controllers/userController.js');
 const OfficeController = require('../controllers/officeController.js');
 const DivisionController = require('../controllers/divisionController.js');
 const EmployeeController = require('../controllers/employeeController');
+const AuthController = require('../controllers/authController');
 
 const validateEmployee = require('../validators/employeeValidator');
 const validateUser = require('../validators/userValidator');
@@ -17,6 +19,7 @@ const userController = new UserController();
 const officeController = new OfficeController();
 const divisionController = new DivisionController();
 const employeeController = new EmployeeController();
+const authController = new AuthController();
 
 const handleValidationErrors = (req, res, next) => {
     const errors = validationResult(req);
@@ -26,11 +29,19 @@ const handleValidationErrors = (req, res, next) => {
     next();
 };
 
+
+
 function setRoutes(app) {
+    app.use(cors());
     app.use('/api', router);
+    app.use(express.json());
     
     router.get('/', indexController.home);
     router.get('/data', indexController.getData);
+
+    // Auth routes
+    router.post('/login', authController.login);
+    router.get('/logout', authController.logout);
 
     // User CRUD routes
     router.post('/users', validateUser, handleValidationErrors, userController.createUser);
