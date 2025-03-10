@@ -1,10 +1,13 @@
 const Attendance = require('../models/attendance');
 const Employee = require('../models/employee');
+const axios = require("axios");
+require("dotenv").config();
 
 class AttendanceController {
     constructor() {
         this.createOrUpdate = this.createOrUpdate.bind(this);
         this.attendancebySerialid = this.attendancebySerialid.bind(this);
+        this.sendDataToAntares = this.sendDataToAntares.bind(this);
     }
     async createOrUpdate(employee_id, res) {
         try {
@@ -12,8 +15,13 @@ class AttendanceController {
 
             const employee = await Employee.findById(employee_id);
             if (!employee) {
-                res.status(404).json({ error: 'Employee not found' });
-                return;
+                var send = this.sendDataToAntares({
+                    success : false,
+                    message : 'Employee not found',
+                    serial_id : employee.serial_id,
+                }, res);
+                console.log(send);
+                // return res.status(404).json({ error: 'Employee not found' });
             }
 
             const exists = await Attendance.existsForDay(employee_id);
@@ -24,9 +32,21 @@ class AttendanceController {
                 });
 
                 if (success) {
-                    res.status(200).json({ message: 'Attendance record updated successfully' });
+                    var send = this.sendDataToAntares({
+                        success : true,
+                        message : 'Attendance record updated successfully',
+                        serial_id : employee.serial_id,
+                    }, res);
+                    console.log(send);
+                    // return res.json({ message: 'Attendance record updated successfully' });
                 } else {
-                    res.status(500).json({ error: 'Failed to update attendance record' });
+                    var send = this.sendDataToAntares({
+                        success : true,
+                        message : 'Failed to update attendance record',
+                        serial_id : employee.serial_id,
+                    }, res);
+                    console.log(send);
+                    // return res.status(500).json({ error: 'Failed to update attendance record' });
                 }
             } else {
                 // Create a new record
@@ -34,24 +54,82 @@ class AttendanceController {
                     employee_id,
                 });
 
-                res.status(201).json({ id });
+                // return res.json(id);
+                var send = this.sendDataToAntares({
+                    success : true,
+                    id,
+                    message : 'Success to check in today',
+                    serial_id : employee.serial_id,
+                }, res);
+                console.log(send);
+
             }
+        } catch (error) {
+            const send = this.sendDataToAntares({
+                success : false,
+                message : 'Failed to check in/check out today',
+                serial_id : employee.serial_id,
+            }, res);
+            console.log(send);
+            // return res.status(500).json({ error: error.message });
+        }
+    }
+
+    async attendancebySerialid(serial_id, res) {
+        try {
+            const attendance = await Employee.findBySerialId(serial_id);
+            if (!attendance) {
+                res.status(404).json({ error: 'Attendance record not found' });
+            }
+                console.log(attendance);
+                this.createOrUpdate(attendance.id, res);
+            
+            // console.log(create);
         } catch (error) {
             res.status(500).json({ error: error.message });
         }
     }
 
-    async attendancebySerialid(req, res) {
+    async sendDataToAntares(data, res) {
         try {
-            const { serial_id } = req.body;
-            const attendance = await Employee.findBySerialId(serial_id);
-            if (!attendance) {
-                res.status(404).json({ error: 'Attendance record not found' });
+            // Konversi data ke format JSON string seperti yang diminta oleh Antares
+            const formattedData = {
+                "m2m:cin": {
+                    "con": JSON.stringify(data) // Convert object ke string JSON
+                }
+            };
+
+            const url = `${process.env.ANTARES_ROUTE}/${process.env.ANTARES_CSE}/${process.env.ANTARES_ID}/${process.env.APP_NAME}/${process.env.DEVICE_NAME}`;
+            
+            console.log("Antares URL:", url); // Cek apakah URL sudah benar
+
+            if (!process.env.ANTARES_ROUTE || !process.env.ANTARES_CSE || !process.env.ANTARES_ID || !process.env.APP_NAME || !process.env.DEVICE_NAME) {
+                throw new Error("Missing required environment variables for Antares API.");
             }
-            console.log(attendance);
-            await this.createOrUpdate(attendance.id, res);
+
+            // Kirim request ke Antares
+            const response = await axios.post(
+                url,
+                formattedData,
+                {
+                    headers: {
+                        "X-M2M-Origin": process.env.ACCESS_KEY, // Ganti dengan access key Antares kamu
+                        "Content-Type": "application/json;ty=4",
+                        "Accept": "application/json"
+                    }
+                }
+            );
+
+            console.log("Data sent successfully:", response.data);
+            // return;
+            // return res.status(200);
+            // return response.data;
+            return res.status(200).json({ success: true, message: "Data sent successfully", data: response.data });
         } catch (error) {
-            res.status(500).json({ error: error.message });
+            console.error("Error sending data to Antares:", error.response?.data || error.message);
+            // return;
+            // return res.status(400);
+            return res.status(400).json({ success: false, error: error.response?.data || error.message });
         }
     }
 
