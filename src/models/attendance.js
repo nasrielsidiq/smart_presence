@@ -1,4 +1,5 @@
 const pool = require('../db.js');
+const Employee = require('./employee.js');
 
 class Attendance {
     /**
@@ -81,9 +82,40 @@ class Attendance {
      * Retrieve all attendance records.
      * @returns {Promise<Array>} - An array of attendance records.
      */
-    static async findAll({ page = 1, limit = 10 }) {
+    static async findAll({ page = 1, limit = 10, period = 'daily' }) {
         const offset = (page - 1) * limit;
-        const [rows] = await pool.query('SELECT * FROM attendance LIMIT ? OFFSET ?', [limit, offset]);
+        let dateFilter = '1=2';
+        // Filter berdasarkan periode waktu
+        if (period === 'daily') {
+            dateFilter = 'DATE(check_in) = CURDATE()'; // Hari ini
+        } else if (period === 'weekly') {
+            dateFilter = 'YEARWEEK(check_in, 1) = YEARWEEK(CURDATE(), 1)'; // Minggu ini
+        } else if (period === 'monthly') {
+            dateFilter = 'MONTH(check_in) = MONTH(CURDATE()) AND YEAR(check_in) = YEAR(CURDATE())'; // Bulan ini
+        }
+        const [rows] = await pool.query(`SELECT * FROM attendance WHERE ${dateFilter} LIMIT ? OFFSET ?`, [limit, offset]);
+        const [[{ total }]] = await pool.query('SELECT COUNT(*) AS total FROM attendance');
+        return {
+            attendance: rows,
+            total,
+            totalPages: Math.ceil(total / limit),
+            currentPage: page
+        };
+    }
+
+
+    static async IndividuAttendanceAll({ page = 1, limit = 10, period = 'daily', id }) {
+        const offset = (page - 1) * limit;
+        let dateFilter = '1=2';
+        // Filter berdasarkan periode waktu
+        if (period === 'daily') {
+            dateFilter = 'DATE(check_in) = CURDATE()'; // Hari ini
+        } else if (period === 'weekly') {
+            dateFilter = 'YEARWEEK(check_in, 1) = YEARWEEK(CURDATE(), 1)'; // Minggu ini
+        } else if (period === 'monthly') {
+            dateFilter = 'MONTH(check_in) = MONTH(CURDATE()) AND YEAR(check_in) = YEAR(CURDATE())'; // Bulan ini
+        }
+        const [rows] = await pool.query(`SELECT * FROM attendance WHERE employee_id = ? AND ${dateFilter} LIMIT ? OFFSET ?`, [id ,limit, offset]);
         const [[{ total }]] = await pool.query('SELECT COUNT(*) AS total FROM attendance');
         return {
             attendance: rows,

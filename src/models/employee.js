@@ -40,6 +40,20 @@ class Employee {
         };
     }
 
+
+    static async svFindAll({ page = 1, limit = 10 }) {
+        const offset = (page - 1) * limit;
+        const supervisor_id = req.user.id;
+        const [rows] = await pool.query('SELECT * FROM employees WHERE supervisor_id = ? LIMIT ? OFFSET ?', [supervisor_id, limit, offset]);
+        const [[{ total }]] = await pool.query('SELECT COUNT(*) AS total FROM employees');
+        return {
+            employees: rows,
+            total,
+            totalPages: Math.ceil(total / limit),
+            currentPage: page
+        };
+    }
+
     /**
      * Find an employee by ID.
      * @param {number} id - The ID of the employee.

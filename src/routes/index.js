@@ -64,17 +64,19 @@ function setRoutes(app) {
     app.use(express.json());
     app.use(bodyParser.json());
     app.use(bodyParser.urlencoded({ extended: false }));
-    app.use(limiter);
+    // app.use(limiter);
 
     // Use router '/api' after all middleware is set up
     app.use('/api', router);
+
+        // 🔹 Monitor routes (Without Authentication)
+    router.post('/monitor', monitorController.postMonitor);
 
     // 🔹 Auth routes
     router.post('/login', authController.login);
     router.get('/logout', authController.logout);
 
-    // 🔹 Monitor routes (Without Authentication)
-    router.post('/monitor', monitorController.postMonitor);
+
 
     // 🔹 Authentication Middleware (Login Required)
     router.use(authMiddleware);
@@ -107,6 +109,7 @@ function setRoutes(app) {
     // 🔹 Attendance routes
     router.post('/attendances', attendanceController.attendancebySerialid);
     router.get('/attendances', attendanceController.getAttendances);
+    router.get('/attendances/:id', attendanceController.getAttendancesIndividu);
     router.get('/attendance/:id', attendanceController.checkEmployeeAttendance);
 
     // 🔹 Dashboard routes

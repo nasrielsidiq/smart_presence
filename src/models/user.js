@@ -28,7 +28,7 @@ class User {
      */
     static async findAll({ page = 1, limit = 10 }) {
         const offset = (page - 1) * limit;
-        const [rows] = await pool.query('SELECT id, username, email, no_hp, privilage, created_at FROM users LIMIT ? OFFSET ?', [limit, offset]);
+        const [rows] = await pool.query('SELECT id, username, email, serial_id, no_hp, privilage, created_at FROM users LIMIT ? OFFSET ?', [limit, offset]);
         const [[{ total }]] = await pool.query('SELECT COUNT(*) AS total FROM users');
         return {
             users: rows,

@@ -151,7 +151,27 @@ class AttendanceController {
         try {
             const page = parseInt(req.query.page, 10) || 1;
             const limit = parseInt(req.query.limit, 10) || 10;
-            const attendances = await Attendance.findAll({ page, limit });
+            const period = req.query.period || 'daily';
+            const attendances = await Attendance.findAll({ page, limit, period });
+            res.json(attendances);
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    }
+
+    async getAttendancesIndividu(req, res) {
+        try {
+
+            const employee = await Employee.findById(req.params.id);
+            if (!employee) {
+                return  res.status(404).json({ error: 'Employee not found' });
+            }
+
+            const page = parseInt(req.query.page, 10) || 1;
+            const limit = parseInt(req.query.limit, 10) || 10;
+            const period = req.query.period || 'daily';
+            const employee_id = employee.id;
+            const attendances = await Attendance.findAll({ page, limit, period, employee_id});
             res.json(attendances);
         } catch (error) {
             res.status(500).json({ error: error.message });
