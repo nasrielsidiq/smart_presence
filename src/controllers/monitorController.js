@@ -5,14 +5,6 @@ var bodyParser = require('body-parser');
 var util = require('util');
 
 class MonitorController {
-    /**
-     * Handle GET request for monitor.
-     * @param {Object} req - The request object.
-     * @param {Object} res - The response object.
-     */
-    async getMonitor(req, res) {
-        res.send('GET Monitor');
-    }
 
     /**
      * Handle POST request for monitor.
@@ -53,24 +45,7 @@ class MonitorController {
             return res.status(500).json({ error: "Internal Server Error" });
         }
     }
-    
-    /**
-     * Handle PUT request for monitor.
-     * @param {Object} req - The request object.
-     * @param {Object} res - The response object.
-     */
-    async putMonitor(req, res) {
-        res.send('PUT Monitor');
-    }
 
-    /**
-     * Handle DELETE request for monitor.
-     * @param {Object} req - The request object.
-     * @param {Object} res - The response object.
-     */
-    async deleteMonitor(req, res) {
-        res.send('DELETE Monitor');
-    }
 }
 
 module.exports = MonitorController;

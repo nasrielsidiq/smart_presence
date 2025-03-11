@@ -1,4 +1,5 @@
 const pool = require('../db.js');
+const bcrypt = require('bcrypt');
 
 class User {
     /**
@@ -75,6 +76,45 @@ class User {
             console.error('Error updating user:', error);
             throw new Error('Failed to update user');
         }   
+    }
+
+    /**
+     * Update the current user.
+     * @param {number} id - The ID of the user.
+     * @param {Object} user - The updated user data.
+     * @param {string} user.username - The username of the user.
+     * @param {string} user.email - The email of the user.
+     * @param {string} [user.password] - The new password of the user (optional).
+     * @param {string} user.no_hp - The phone number of the user.
+     * @returns {Promise<boolean>} - A boolean indicating whether the update was successful.
+     */
+    static async updateCurrentUser(id, user) {
+        try {
+            let { username, email, password, no_hp } = user;
+    
+            // Retrieve old password if no new password is provided
+            const [rows] = await pool.query('SELECT password FROM users WHERE id = ?', [id]);
+            if (rows.length === 0) {
+                throw new Error('User not found');
+            }
+    
+            // Hash new password if provided
+            let newPassword = rows[0].password;
+            if (password) {
+                newPassword = await bcrypt.hash(password, 10);
+            }
+    
+            // Perform update
+            const [status] = await pool.query(
+                'UPDATE users SET username = ?, email = ?, password = ?, no_hp = ? WHERE id = ?',
+                [username, email, newPassword, no_hp, id]
+            );
+    
+            return status.affectedRows > 0;
+        } catch (error) {
+            console.error('Error updating user:', error);
+            throw new Error('Failed to update user');
+        }
     }
 
     /**

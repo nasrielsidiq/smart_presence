@@ -19,6 +19,8 @@ const validateOffice = require('../validators/officeValidator');
 
 const router = express.Router();
 const rateLimit = require("express-rate-limit");
+const authMiddleware = require('../middlewares/auth');
+const roleMiddleware = require('../middlewares/roleMiddleware');
 const indexController = new IndexController();
 const userController = new UserController();
 const officeController = new OfficeController();
@@ -57,64 +59,80 @@ const limiter = rateLimit({
  * @param {Object} app - The Express application object.
  */
 function setRoutes(app) {
+    // Setup Global Middleware
     app.use(cors());
-    app.use('/api', router);
     app.use(express.json());
-    app.use(limiter);
     app.use(bodyParser.json());
     app.use(bodyParser.urlencoded({ extended: false }));
+    app.use(limiter);
 
-    // Monitor routes
-    router.post('/monitor', monitorController.postMonitor);
+    // Use router '/api' after all middleware is set up
+    app.use('/api', router);
 
-    // Index routes
-    router.get('/', indexController.home);
-    router.get('/data', indexController.getData);
-
-    // Auth routes
+    // 🔹 Auth routes
     router.post('/login', authController.login);
     router.get('/logout', authController.logout);
 
-    // User CRUD routes
-    router.post('/users', validateUser, handleValidationErrors, userController.createUser);
-    router.get('/users', userController.getUsers);
-    router.get('/users/:id', userController.getUserById);
-    router.put('/users/:id', validateUser, handleValidationErrors, userController.updateUser);
-    router.delete('/users/:id', userController.deleteUser);
+    // 🔹 Monitor routes (Without Authentication)
+    router.post('/monitor', monitorController.postMonitor);
 
-    // Office CRUD routes
+    // 🔹 Authentication Middleware (Login Required)
+    router.use(authMiddleware);
+
+    // 🔹 Index routes
+    router.get('/', indexController.home);
+    router.get('/data', indexController.getData);
+
+    // 🔹 Role Middleware for Supervisor, Top Manager, Admin
+    router.use(roleMiddleware(['admin', 'supervisor', 'top manager']));
+
+    // 🔹 Profile routes
+    router.get('/me', userController.getCurrentUser);
+    router.post('/me/update', userController.updateCurrentUser);
+
+    // 🔹 Office CRUD routes
     router.post('/offices', validateOffice, handleValidationErrors, officeController.createOffice);
     router.get('/offices', officeController.getOffices);
     router.get('/offices/:id', officeController.getOfficeById);
     router.put('/offices/:id', validateOffice, handleValidationErrors, officeController.updateOffice);
     router.delete('/offices/:id', officeController.deleteOffice);
 
-    // Division CRUD routes
+    // 🔹 Division CRUD routes
     router.post('/divisions', validateDivision, handleValidationErrors, divisionController.createDivision);
     router.get('/divisions', divisionController.getDivisions);
     router.get('/divisions/:id', divisionController.getDivisionById);
     router.put('/divisions/:id', validateDivision, handleValidationErrors, divisionController.updateDivision);
     router.delete('/divisions/:id', divisionController.deleteDivision);
 
-    // Employee CRUD routes
+    // 🔹 Attendance routes
+    router.post('/attendances', attendanceController.attendancebySerialid);
+    router.get('/attendances', attendanceController.getAttendances);
+    router.get('/attendance/:id', attendanceController.checkEmployeeAttendance);
+
+    // 🔹 Dashboard routes
+    router.get('/dashboard', dashboardController.index);
+
+    // 🔹 Fake route for testing
+    router.post('/fakeRoute', (req, res) => {
+        res.send('Fake Route');
+    });
+
+    // 🔹 Role Middleware for Admin Only
+    router.use(roleMiddleware(['admin']));
+
+    // 🔹 User CRUD routes
+    router.post('/users', validateUser, handleValidationErrors, userController.createUser);
+    router.get('/users', userController.getUsers);
+    router.get('/users/:id', userController.getUserById);
+    router.put('/users/:id', validateUser, handleValidationErrors, userController.updateUser);
+    router.delete('/users/:id', userController.deleteUser);
+
+    // 🔹 Employee CRUD routes
     router.post('/employees', validateEmployee, handleValidationErrors, employeeController.create);
     router.get('/employees', employeeController.findAll);
     router.get('/employees/:id', employeeController.findById);
     router.put('/employees/:id', validateEmployee, handleValidationErrors, employeeController.update);
     router.delete('/employees/:id', employeeController.delete);
-
-    // Attendance routes
-    router.post('/attendances', attendanceController.attendancebySerialid);
-    router.get('/attendances', attendanceController.getAttendances);
-    router.get('/attendance/:id', attendanceController.checkEmployeeAttendance);
-
-    // Dashboard routes
-    router.get('/dashboard', dashboardController.index);
-
-    // Fake route for testing
-    router.post('/fakeRoute', (req, res) => {
-        res.send('Fake Route');
-    });
 }
 
 module.exports = { setRoutes };

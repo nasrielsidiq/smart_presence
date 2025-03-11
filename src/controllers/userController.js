@@ -26,7 +26,61 @@ class UserController {
     async getUsers(req, res) {
         try {
             const users = await User.findAll();
-            res.json(users);
+            const filteredUsers = users.map(user => ({
+                id: user.id,
+                username: user.username,
+                email: user.email,
+                privilage: user.privilage,
+                no_hp: user.no_hp,
+                createdAt: user.createdAt,
+            }));
+    
+            res.json(filteredUsers);
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    }
+
+    /**
+     * Retrieve the current user based on the JWT token.
+     * @param {Object} req - The request object.
+     * @param {Object} res - The response object.
+     */
+    async getCurrentUser(req, res) {
+        try {
+            const user = await User.findById(req.user.id);
+    
+            if (!user) {
+                return res.status(404).json({ message: "User not found" });
+            }
+    
+            res.json(user);
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    }
+
+    /**
+     * Update the current user based on the JWT token.
+     * @param {Object} req - The request object.
+     * @param {Object} res - The response object.
+     */
+    async updateCurrentUser(req, res) {
+        try {
+            const user = {
+                username: req.body.username,
+                email: req.body.email,
+                no_hp: req.body.no_hp,
+                password: req.body.password || null
+            };
+
+            const status = await User.updateCurrentUser(req.user.id, user);
+
+            if (!status) {
+                return res.status(404).json({ error: 'User not found' });
+            }
+
+            res.json({ message: 'User updated successfully' });
         } catch (error) {
             res.status(500).json({ error: error.message });
         }
