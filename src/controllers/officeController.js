@@ -22,7 +22,9 @@ class OfficeController {
      */
     async getOffices(req, res) {
         try {
-            const offices = await Office.findAll();
+            const page = parseInt(req.query.page, 10) || 1;
+            const limit = parseInt(req.query.limit, 10) || 10;
+            const offices = await Office.findAll({ page, limit });
             res.json(offices);
         } catch (error) {
             res.status(500).json({ error: error.message });

@@ -22,9 +22,16 @@ class Office {
      * Retrieve all offices.
      * @returns {Promise<Array>} - An array of office records.
      */
-    static async findAll() {
-        const [rows] = await pool.query('SELECT * FROM offices');
-        return rows;
+    static async findAll({ page = 1, limit = 10 }) {
+        const offset = (page - 1) * limit;
+        const [rows] = await pool.query('SELECT * FROM offices LIMIT ? OFFSET ?', [limit, offset]); 
+        const [[{ total }]] = await pool.query('SELECT COUNT(*) AS total FROM offices');
+        return {
+            offices: rows,
+            total,
+            totalPages: Math.ceil(total / limit),
+            currentPage: page
+        };
     }
 
     /**

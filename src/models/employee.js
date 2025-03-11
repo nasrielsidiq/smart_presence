@@ -28,9 +28,16 @@ class Employee {
      * Retrieve all employees.
      * @returns {Promise<Array>} - An array of employee records.
      */
-    static async findAll() {
-        const [rows] = await pool.query('SELECT * FROM employees');
-        return rows;
+    static async findAll({ page = 1, limit = 10 }) {
+        const offset = (page - 1) * limit;
+        const [rows] = await pool.query('SELECT * FROM employees LIMIT ? OFFSET ?', [limit, offset]);
+        const [[{ total }]] = await pool.query('SELECT COUNT(*) AS total FROM employees');
+        return {
+            employees: rows,
+            total,
+            totalPages: Math.ceil(total / limit),
+            currentPage: page
+        };
     }
 
     /**

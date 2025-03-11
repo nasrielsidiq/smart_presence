@@ -149,7 +149,9 @@ class AttendanceController {
      */
     async getAttendances(req, res) {
         try {
-            const attendances = await Attendance.findAll();
+            const page = parseInt(req.query.page, 10) || 1;
+            const limit = parseInt(req.query.limit, 10) || 10;
+            const attendances = await Attendance.findAll({ page, limit });
             res.json(attendances);
         } catch (error) {
             res.status(500).json({ error: error.message });

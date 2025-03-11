@@ -25,17 +25,13 @@ class UserController {
      */
     async getUsers(req, res) {
         try {
-            const users = await User.findAll();
-            const filteredUsers = users.map(user => ({
-                id: user.id,
-                username: user.username,
-                email: user.email,
-                privilage: user.privilage,
-                no_hp: user.no_hp,
-                createdAt: user.createdAt,
-            }));
+
+            const page = parseInt(req.query.page, 10) || 1;
+            const limit = parseInt(req.query.limit, 10) || 10;
     
-            res.json(filteredUsers);
+            const users = await User.findAll({ page, limit });
+    
+            res.json(users);
         } catch (error) {
             res.status(500).json({ error: error.message });
         }

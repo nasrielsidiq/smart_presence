@@ -26,9 +26,16 @@ class User {
      * Retrieve all users.
      * @returns {Promise<Array>} - An array of user records.
      */
-    static async findAll() {
-        const [rows] = await pool.query('SELECT * FROM users');
-        return rows; 
+    static async findAll({ page = 1, limit = 10 }) {
+        const offset = (page - 1) * limit;
+        const [rows] = await pool.query('SELECT id, username, email, no_hp, privilage, created_at FROM users LIMIT ? OFFSET ?', [limit, offset]);
+        const [[{ total }]] = await pool.query('SELECT COUNT(*) AS total FROM users');
+        return {
+            users: rows,
+            total,
+            totalPages: Math.ceil(total / limit),
+            currentPage: page
+        };
     }
 
     /**
