@@ -9,111 +9,110 @@ class AttendanceController {
         this.attendancebySerialid = this.attendancebySerialid.bind(this);
         this.sendDataToAntares = this.sendDataToAntares.bind(this);
     }
+
+    /**
+     * Create or update an attendance record for an employee.
+     * @param {number} employee_id - The ID of the employee.
+     * @param {Object} res - The response object.
+     */
     async createOrUpdate(employee_id, res) {
         try {
-            // const { employee_id } = req.body || req.params;
-
             const employee = await Employee.findById(employee_id);
             if (!employee) {
                 var send = this.sendDataToAntares({
-                    success : false,
-                    message : 'Employee not found',
-                    serial_id : employee.serial_id,
+                    success: false,
+                    message: 'Employee not found',
+                    serial_id: employee.serial_id,
                 }, res);
                 console.log(send);
-                // return res.status(404).json({ error: 'Employee not found' });
             }
 
             const exists = await Attendance.existsForDay(employee_id);
 
             if (exists) {
-                const success = await Attendance.create({
-                    employee_id,
-                });
+                const success = await Attendance.create({ employee_id });
 
                 if (success) {
                     var send = this.sendDataToAntares({
-                        success : true,
-                        message : 'Attendance record updated successfully',
-                        serial_id : employee.serial_id,
+                        success: true,
+                        message: 'Attendance record updated successfully',
+                        serial_id: employee.serial_id,
                     }, res);
                     console.log(send);
-                    // return res.json({ message: 'Attendance record updated successfully' });
                 } else {
                     var send = this.sendDataToAntares({
-                        success : true,
-                        message : 'Failed to update attendance record',
-                        serial_id : employee.serial_id,
+                        success: true,
+                        message: 'Failed to update attendance record',
+                        serial_id: employee.serial_id,
                     }, res);
                     console.log(send);
-                    // return res.status(500).json({ error: 'Failed to update attendance record' });
                 }
             } else {
-                // Create a new record
-                const id = await Attendance.create({
-                    employee_id,
-                });
+                const id = await Attendance.create({ employee_id });
 
-                // return res.json(id);
                 var send = this.sendDataToAntares({
-                    success : true,
+                    success: true,
                     id,
-                    message : 'Success to check in today',
-                    serial_id : employee.serial_id,
+                    message: 'Success to check in today',
+                    serial_id: employee.serial_id,
                 }, res);
                 console.log(send);
-
             }
         } catch (error) {
             const send = this.sendDataToAntares({
-                success : false,
-                message : 'Failed to check in/check out today',
-                serial_id : employee.serial_id,
+                success: false,
+                message: 'Failed to check in/check out today',
+                serial_id: employee.serial_id,
             }, res);
             console.log(send);
-            // return res.status(500).json({ error: error.message });
         }
     }
 
+    /**
+     * Handle attendance by serial ID.
+     * @param {string} serial_id - The serial ID of the employee.
+     * @param {Object} res - The response object.
+     */
     async attendancebySerialid(serial_id, res) {
         try {
             const attendance = await Employee.findBySerialId(serial_id);
             if (!attendance) {
                 res.status(404).json({ error: 'Attendance record not found' });
             }
-                console.log(attendance);
-                this.createOrUpdate(attendance.id, res);
-            
-            // console.log(create);
+            console.log(attendance);
+            this.createOrUpdate(attendance.id, res);
         } catch (error) {
             res.status(500).json({ error: error.message });
         }
     }
 
+    /**
+     * Send data to Antares.
+     * @param {Object} data - The data to send.
+     * @param {Object} res - The response object.
+     */
     async sendDataToAntares(data, res) {
         try {
-            // Konversi data ke format JSON string seperti yang diminta oleh Antares
             const formattedData = {
                 "m2m:cin": {
-                    "con": JSON.stringify(data) // Convert object ke string JSON
+                    "con": JSON.stringify(data)
                 }
             };
 
             const url = `${process.env.ANTARES_ROUTE}/${process.env.ANTARES_CSE}/${process.env.ANTARES_ID}/${process.env.APP_NAME}/${process.env.DEVICE_NAME}`;
             
-            console.log("Antares URL:", url); // Cek apakah URL sudah benar
+            console.log("Antares URL:", url);
 
             if (!process.env.ANTARES_ROUTE || !process.env.ANTARES_CSE || !process.env.ANTARES_ID || !process.env.APP_NAME || !process.env.DEVICE_NAME) {
                 throw new Error("Missing required environment variables for Antares API.");
             }
 
-            // Kirim request ke Antares
             const response = await axios.post(
                 url,
                 formattedData,
                 {
                     headers: {
-                        "X-M2M-Origin": process.env.ACCESS_KEY, // Ganti dengan access key Antares kamu
+                        "X-M2M-Origin": process.env.ACCESS_KEY,
                         "Content-Type": "application/json;ty=4",
                         "Accept": "application/json"
                     }
@@ -121,22 +120,20 @@ class AttendanceController {
             );
 
             console.log("Data sent successfully:", response.data);
-            // return;
-            // return res.status(200);
-            // return response.data;
             return res.status(200).json({ success: true, message: "Data sent successfully", data: response.data });
         } catch (error) {
             console.error("Error sending data to Antares:", error.response?.data || error.message);
-            // return;
-            // return res.status(400);
             return res.status(400).json({ success: false, error: error.response?.data || error.message });
         }
     }
 
+    /**
+     * Check employee attendance for the current day.
+     * @param {Object} req - The request object.
+     * @param {Object} res - The response object.
+     */
     async checkEmployeeAttendance(req, res) {
         try {
-            // const { id } = req.body;
-            console.log(req.params.id);
             const attendance = await Attendance.existsForDay(req.params.id);
             console.log(attendance);
             res.json(attendance);
@@ -145,6 +142,11 @@ class AttendanceController {
         }
     }
 
+    /**
+     * Retrieve all attendance records.
+     * @param {Object} req - The request object.
+     * @param {Object} res - The response object.
+     */
     async getAttendances(req, res) {
         try {
             const attendances = await Attendance.findAll();
@@ -154,6 +156,11 @@ class AttendanceController {
         }
     }
 
+    /**
+     * Retrieve an attendance record by ID.
+     * @param {Object} req - The request object.
+     * @param {Object} res - The response object.
+     */
     async getAttendanceById(req, res) {
         try {
             const attendance = await Attendance.findById(req.params.id);
@@ -167,6 +174,11 @@ class AttendanceController {
         }
     }
 
+    /**
+     * Update an attendance record by ID.
+     * @param {Object} req - The request object.
+     * @param {Object} res - The response object.
+     */
     async updateAttendance(req, res) {
         try {
             const { employee_id, check_in, check_out, status_check_in, status_check_out, category } = req.body;
@@ -188,7 +200,6 @@ class AttendanceController {
             res.status(500).json({ error: error.message });
         }
     }
-
 }
 
 module.exports = AttendanceController;

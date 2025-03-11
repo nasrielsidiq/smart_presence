@@ -1,6 +1,11 @@
 const Office = require('../models/office.js');
 
 class OfficeController {
+    /**
+     * Create a new office.
+     * @param {Object} req - The request object.
+     * @param {Object} res - The response object.
+     */
     async createOffice(req, res) {
         try {
             const officeId = await Office.create(req.body);
@@ -10,6 +15,11 @@ class OfficeController {
         }
     }
 
+    /**
+     * Retrieve all offices.
+     * @param {Object} req - The request object.
+     * @param {Object} res - The response object.
+     */
     async getOffices(req, res) {
         try {
             const offices = await Office.findAll();
@@ -19,6 +29,11 @@ class OfficeController {
         }
     }
 
+    /**
+     * Retrieve an office by ID.
+     * @param {Object} req - The request object.
+     * @param {Object} res - The response object.
+     */
     async getOfficeById(req, res) {
         try {
             const office = await Office.findById(req.params.id);
@@ -32,6 +47,11 @@ class OfficeController {
         }
     }
 
+    /**
+     * Update an office by ID.
+     * @param {Object} req - The request object.
+     * @param {Object} res - The response object.
+     */
     async updateOffice(req, res) {
         try {
             const status = await Office.update(req.params.id, req.body);
@@ -46,11 +66,16 @@ class OfficeController {
         }
     }
 
+    /**
+     * Delete an office by ID.
+     * @param {Object} req - The request object.
+     * @param {Object} res - The response object.
+     */
     async deleteOffice(req, res) {
         try {
             const status = await Office.delete(req.params.id);
 
-            if(!status){
+            if (!status) {
                 res.status(404).json({ error: 'Office not found' });
                 return;
             }

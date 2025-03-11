@@ -1,19 +1,22 @@
 const Employee = require('../models/employee');
 const User = require('../models/user');
 
-const user = new User();
-
 class EmployeeController {
+    /**
+     * Create a new employee.
+     * @param {Object} req - The request object.
+     * @param {Object} res - The response object.
+     */
     async create(req, res) {
         try {
             if (req.body.supervisor_id) {
                 const user = await User.findById(req.body.supervisor_id);
                 
-                if (!user) { // ✅ Pastikan supervisor ditemukan
+                if (!user) {
                     return res.status(404).json({ error: 'Supervisor not found' });
                 }
 
-                if (user.privilage !== 'supervisor') { // ✅ Pastikan supervisor memiliki privilage 'supervisor'
+                if (user.privilage !== 'supervisor') {
                     return res.status(400).json({ error: 'Supervisor must have privilage supervisor' });
                 }
             }
@@ -25,6 +28,11 @@ class EmployeeController {
         }
     }
 
+    /**
+     * Retrieve all employees.
+     * @param {Object} req - The request object.
+     * @param {Object} res - The response object.
+     */
     async findAll(req, res) {
         try {
             const employees = await Employee.findAll();
@@ -34,6 +42,11 @@ class EmployeeController {
         }
     }
 
+    /**
+     * Retrieve an employee by ID.
+     * @param {Object} req - The request object.
+     * @param {Object} res - The response object.
+     */
     async findById(req, res) {
         try {
             const employee = await Employee.findById(req.params.id);
@@ -47,22 +60,27 @@ class EmployeeController {
         }
     }
 
+    /**
+     * Update an employee by ID.
+     * @param {Object} req - The request object.
+     * @param {Object} res - The response object.
+     */
     async update(req, res) {
         try {
             if (req.body.supervisor_id) {
                 const user = await User.findById(req.body.supervisor_id);
                 
-                if (!user) { // ✅ Pastikan supervisor ditemukan
+                if (!user) {
                     return res.status(404).json({ error: 'Supervisor not found' });
                 }
 
-                if (user.privilage !== 'supervisor') { // ✅ Pastikan supervisor memiliki privilage 'supervisor'
+                if (user.privilage !== 'supervisor') {
                     return res.status(400).json({ error: 'Supervisor must have privilage supervisor' });
                 }
             }
-            const success =  await Employee.update(req.params.id, req.body);
+            const success = await Employee.update(req.params.id, req.body);
 
-            if(!success) {
+            if (!success) {
                 res.status(404).json({ error: 'Employee not found' });
                 return;
             }
@@ -72,6 +90,11 @@ class EmployeeController {
         }
     }
 
+    /**
+     * Delete an employee by ID.
+     * @param {Object} req - The request object.
+     * @param {Object} res - The response object.
+     */
     async delete(req, res) {
         try {
             const success = await Employee.delete(req.params.id);
@@ -79,12 +102,12 @@ class EmployeeController {
             if (success) {
                 res.json({ message: 'Employee deleted successfully' });
             } else {
-                res.status(404).json({ error: 'Employee not found' }); // ✅ 404 jika ID tidak ditemukan
+                res.status(404).json({ error: 'Employee not found' });
             }
         } catch (error) {
-            res.status(500).json({ error: error.message }); // ✅ 500 jika ada error lainnya
+            res.status(500).json({ error: error.message });
         }
     }
-}   
+}
 
 module.exports = EmployeeController;

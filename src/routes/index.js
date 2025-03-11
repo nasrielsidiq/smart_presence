@@ -29,6 +29,12 @@ const attendanceController = new AttendanceController();
 const dashboardController = new DashboardController();
 const monitorController = new MonitorControler();
 
+/**
+ * Middleware to handle validation errors.
+ * @param {Object} req - The request object.
+ * @param {Object} res - The response object.
+ * @param {Function} next - The next middleware function.
+ */
 const handleValidationErrors = (req, res, next) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -37,14 +43,19 @@ const handleValidationErrors = (req, res, next) => {
     next();
 };
 
+/**
+ * Rate limiter middleware to limit requests.
+ */
 const limiter = rateLimit({
-    windowMs: 1 * 60 * 1000, // 1 menit
-    max: 5, // Maksimum 5 request per menit
-    message: "Terlalu banyak permintaan dari perangkat IoT ini.",
-  });
+    windowMs: 1 * 60 * 1000, // 1 minute
+    max: 5, // Maximum 5 requests per minute
+    message: "Too many requests from this IoT device.",
+});
 
-
-
+/**
+ * Set up routes for the application.
+ * @param {Object} app - The Express application object.
+ */
 function setRoutes(app) {
     app.use(cors());
     app.use('/api', router);
@@ -53,9 +64,10 @@ function setRoutes(app) {
     app.use(bodyParser.json());
     app.use(bodyParser.urlencoded({ extended: false }));
 
-    
+    // Monitor routes
     router.post('/monitor', monitorController.postMonitor);
-    
+
+    // Index routes
     router.get('/', indexController.home);
     router.get('/data', indexController.getData);
 
@@ -96,9 +108,10 @@ function setRoutes(app) {
     router.get('/attendances', attendanceController.getAttendances);
     router.get('/attendance/:id', attendanceController.checkEmployeeAttendance);
 
-    // Dashboard Routes
+    // Dashboard routes
     router.get('/dashboard', dashboardController.index);
 
+    // Fake route for testing
     router.post('/fakeRoute', (req, res) => {
         res.send('Fake Route');
     });

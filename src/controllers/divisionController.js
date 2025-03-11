@@ -1,6 +1,11 @@
 const Division = require('../models/division.js');
 
 class DivisionController {
+    /**
+     * Create a new division.
+     * @param {Object} req - The request object.
+     * @param {Object} res - The response object.
+     */
     async createDivision(req, res) {
         try {
             const divisionId = await Division.create(req.body);
@@ -10,6 +15,11 @@ class DivisionController {
         }
     }
 
+    /**
+     * Retrieve all divisions.
+     * @param {Object} req - The request object.
+     * @param {Object} res - The response object.
+     */
     async getDivisions(req, res) {
         try {
             const divisions = await Division.findAll();
@@ -19,6 +29,11 @@ class DivisionController {
         }
     }
 
+    /**
+     * Retrieve a division by ID.
+     * @param {Object} req - The request object.
+     * @param {Object} res - The response object.
+     */
     async getDivisionById(req, res) {
         try {
             const division = await Division.findById(req.params.id);
@@ -32,26 +47,33 @@ class DivisionController {
         }
     }
 
+    /**
+     * Update a division by ID.
+     * @param {Object} req - The request object.
+     * @param {Object} res - The response object.
+     */
     async updateDivision(req, res) {
         try {
-
             const success = await Division.update(req.params.id, req.body);
-            if(!success) {
+            if (!success) {
                 res.status(404).json({ error: 'Division not found' });
                 return;
             }
-            
             res.json({ message: 'Division updated successfully' });
         } catch (error) {
             res.status(500).json({ error: error.message });
         }
     }
 
+    /**
+     * Delete a division by ID.
+     * @param {Object} req - The request object.
+     * @param {Object} res - The response object.
+     */
     async deleteDivision(req, res) {
         try {
             const success = await Division.delete(req.params.id);
-
-            if(!success) {
+            if (!success) {
                 res.status(404).json({ error: 'Division not found' });
                 return;
             }
@@ -61,6 +83,5 @@ class DivisionController {
         }
     }
 }
-
 
 module.exports = DivisionController;

@@ -3,6 +3,11 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 
 class AuthController {
+    /**
+     * Handle user login.
+     * @param {Object} req - The request object.
+     * @param {Object} res - The response object.
+     */
     async login(req, res) {
         try {
             const { username, password } = req.body;
@@ -25,6 +30,11 @@ class AuthController {
         }
     }
 
+    /**
+     * Handle user logout.
+     * @param {Object} req - The request object.
+     * @param {Object} res - The response object.
+     */
     async logout(req, res) {
         // For stateless JWT, logout can be handled on the client side by deleting the token
         res.json({ message: 'Logged out successfully' });

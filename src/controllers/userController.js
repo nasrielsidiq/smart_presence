@@ -2,6 +2,11 @@ const User = require('../models/user.js');
 const bcrypt = require('bcrypt');   
 
 class UserController {
+    /**
+     * Create a new user.
+     * @param {Object} req - The request object.
+     * @param {Object} res - The response object.
+     */
     async createUser(req, res) {
         try {
             const hashedPassword = await bcrypt.hash(req.body.password, 10);
@@ -13,6 +18,11 @@ class UserController {
         }
     }
 
+    /**
+     * Retrieve all users.
+     * @param {Object} req - The request object.
+     * @param {Object} res - The response object.
+     */
     async getUsers(req, res) {
         try {
             const users = await User.findAll();
@@ -22,6 +32,11 @@ class UserController {
         }
     }
 
+    /**
+     * Retrieve a user by ID.
+     * @param {Object} req - The request object.
+     * @param {Object} res - The response object.
+     */
     async getUserById(req, res) {
         try {
             const user = await User.findById(req.params.id);
@@ -35,6 +50,11 @@ class UserController {
         }
     }
 
+    /**
+     * Update a user by ID.
+     * @param {Object} req - The request object.
+     * @param {Object} res - The response object.
+     */
     async updateUser(req, res) {
         try {
             const status = await User.update(req.params.id, req.body);
@@ -50,10 +70,15 @@ class UserController {
         }
     }
 
+    /**
+     * Delete a user by ID.
+     * @param {Object} req - The request object.
+     * @param {Object} res - The response object.
+     */
     async deleteUser(req, res) {
         try {
             const status = await User.delete(req.params.id);
-            if(!status){
+            if (!status) {
                 res.status(404).json({ error: 'User not found' });
                 return;
             }
