@@ -6,16 +6,21 @@ class Attendance {
      * Create or update an attendance record for an employee.
      * @param {Object} attendance - The attendance data.
      * @param {number} attendance.employee_id - The ID of the employee.
+     * @param {string} attendance.time - The time of the attendance.
      * @returns {Promise<number|boolean>} - The ID of the created record or a boolean indicating success for updates.
      */
     static async create(attendance) {
-        const { employee_id } = attendance;
+        let { employee_id, time } = attendance;
 
-        const now = new Date();
+        const now = new Date(time.replace(' ', 'T'));
         const hours = now.getHours();
         const minutes = now.getMinutes();
-        
+
+        console.log(`Parsed time: ${now}`);
+        console.log(`Hours: ${hours}, Minutes: ${minutes}`);
+
         const status_check_in = (hours < 8 || (hours === 8 && minutes <= 15)) ? "on_time" : "late";
+        console.log(`Status Check-In: ${status_check_in}`);
 
         // Check if the employee_id already exists for the given day
         const exists = await this.existsForDay(employee_id);
@@ -35,15 +40,15 @@ class Attendance {
             const category = await this.categoryStatus(exists.status_check_in, status_check_out);
 
             const [result] = await pool.query(
-                'UPDATE attendance SET check_out = NOW(), status_check_out = ?, category = ? WHERE employee_id = ? AND DATE(check_in) = DATE(NOW())',
-                [status_check_out, category, employee_id]
+                'UPDATE attendance SET check_out = ?, status_check_out = ?, category = ? WHERE employee_id = ? AND DATE(check_in) = DATE(NOW())',
+                [time, status_check_out, category, employee_id]
             );
             return result.affectedRows > 0;
         } else {
             // Create a new record
             const [result] = await pool.query(
-                'INSERT INTO attendance (employee_id, check_in, check_out, status_check_in, status_check_out, category) VALUES (?, NOW(), null, ?, null, null)',
-                [employee_id, status_check_in]
+                'INSERT INTO attendance (employee_id, check_in, check_out, status_check_in, status_check_out, category) VALUES (?, ?, null, ?, null, null)',
+                [employee_id, time, status_check_in]
             );
             return result.insertId;
         }
@@ -80,20 +85,65 @@ class Attendance {
 
     /**
      * Retrieve all attendance records.
-     * @returns {Promise<Array>} - An array of attendance records.
+     * @param {Object} options - The options for retrieving attendance records.
+     * @param {number} [options.page=1] - The page number.
+     * @param {number} [options.limit=10] - The number of records per page.
+     * @param {string} [options.period='daily'] - The period for filtering records (daily, weekly, monthly).
+     * @param {number} [options.sp_id=null] - The supervisor ID for filtering records.
+     * @returns {Promise<Object>} - An object containing the attendance records, total records, total pages, and current page.
      */
-    static async findAll({ page = 1, limit = 10, period = 'daily' }) {
+    static async findAll({ page = 1, limit = 10, period = 'daily', sp_id = null }) {
         const offset = (page - 1) * limit;
         let dateFilter = '1=2';
-        // Filter berdasarkan periode waktu
+        // Filter based on the time period
         if (period === 'daily') {
-            dateFilter = 'DATE(check_in) = CURDATE()'; // Hari ini
+            dateFilter = 'DATE(check_in) = CURDATE()'; // Today
         } else if (period === 'weekly') {
-            dateFilter = 'YEARWEEK(check_in, 1) = YEARWEEK(CURDATE(), 1)'; // Minggu ini
+            dateFilter = 'YEARWEEK(check_in, 1) = YEARWEEK(CURDATE(), 1)'; // This week
         } else if (period === 'monthly') {
-            dateFilter = 'MONTH(check_in) = MONTH(CURDATE()) AND YEAR(check_in) = YEAR(CURDATE())'; // Bulan ini
+            dateFilter = 'MONTH(check_in) = MONTH(CURDATE()) AND YEAR(check_in) = YEAR(CURDATE())'; // This month
         }
-        const [rows] = await pool.query(`SELECT * FROM attendance WHERE ${dateFilter} LIMIT ? OFFSET ?`, [limit, offset]);
+
+        let [rows] = [];
+        let total = 0;
+
+        if (sp_id) {
+            [rows] = await pool.query(`SELECT * FROM attendance INNER JOIN employees ON attendance.employee_id = employees.id WHERE ${dateFilter} AND employees.supervisor_id = ? LIMIT ? OFFSET ?`, [sp_id, limit, offset]);
+            [[{ total }]] = await pool.query('SELECT COUNT(*) AS total FROM attendance INNER JOIN employees ON attendance.employee_id = employees.id WHERE supervisor_id = ?', [sp_id]);
+        } else {
+            [rows] = await pool.query(`SELECT * FROM attendance WHERE ${dateFilter} LIMIT ? OFFSET ?`, [limit, offset]);
+            [[{ total }]] = await pool.query('SELECT COUNT(*) AS total FROM attendance');
+        }
+
+        return {
+            attendance: rows,
+            total,
+            totalPages: Math.ceil(total / limit),
+            currentPage: page
+        };
+    }
+
+    /**
+     * Retrieve individual attendance records for a specific employee.
+     * @param {Object} options - The options for retrieving attendance records.
+     * @param {number} [options.page=1] - The page number.
+     * @param {number} [options.limit=10] - The number of records per page.
+     * @param {string} [options.period='daily'] - The period for filtering records (daily, weekly, monthly).
+     * @param {number} options.id - The ID of the employee.
+     * @returns {Promise<Object>} - An object containing the attendance records, total records, total pages, and current page.
+     */
+    static async IndividuAttendanceAll({ page = 1, limit = 10, period = 'daily', id }) {
+        const offset = (page - 1) * limit;
+        let dateFilter = '1=2';
+        // Filter based on the time period
+        if (period === 'daily') {
+            dateFilter = 'DATE(check_in) = CURDATE()'; // Today
+        } else if (period === 'weekly') {
+            dateFilter = 'YEARWEEK(check_in, 1) = YEARWEEK(CURDATE(), 1)'; // This week
+        } else if (period === 'monthly') {
+            dateFilter = 'MONTH(check_in) = MONTH(CURDATE()) AND YEAR(check_in) = YEAR(CURDATE())'; // This month
+        }
+        const [rows] = await pool.query(`SELECT * FROM attendance WHERE employee_id = ? AND ${dateFilter} LIMIT ? OFFSET ?`, [id, limit, offset]);
         const [[{ total }]] = await pool.query('SELECT COUNT(*) AS total FROM attendance');
         return {
             attendance: rows,
@@ -103,20 +153,28 @@ class Attendance {
         };
     }
 
-
-    static async IndividuAttendanceAll({ page = 1, limit = 10, period = 'daily', id }) {
+    /**
+     * Retrieve attendance records for employees under a specific supervisor.
+     * @param {Object} options - The options for retrieving attendance records.
+     * @param {number} [options.page=1] - The page number.
+     * @param {number} [options.limit=10] - The number of records per page.
+     * @param {string} [options.period='daily'] - The period for filtering records (daily, weekly, monthly).
+     * @param {number} options.sp_id - The supervisor ID.
+     * @returns {Promise<Object>} - An object containing the attendance records, total records, total pages, and current page.
+     */
+    static async spfindAll({ page = 1, limit = 10, period = 'daily', sp_id }) {
         const offset = (page - 1) * limit;
         let dateFilter = '1=2';
-        // Filter berdasarkan periode waktu
+        // Filter based on the time period
         if (period === 'daily') {
-            dateFilter = 'DATE(check_in) = CURDATE()'; // Hari ini
+            dateFilter = 'DATE(attendance.check_in) = CURDATE()'; // Today
         } else if (period === 'weekly') {
-            dateFilter = 'YEARWEEK(check_in, 1) = YEARWEEK(CURDATE(), 1)'; // Minggu ini
+            dateFilter = 'YEARWEEK(attendance.check_in, 1) = YEARWEEK(CURDATE(), 1)'; // This week
         } else if (period === 'monthly') {
-            dateFilter = 'MONTH(check_in) = MONTH(CURDATE()) AND YEAR(check_in) = YEAR(CURDATE())'; // Bulan ini
+            dateFilter = 'MONTH(attendance.check_in) = MONTH(CURDATE()) AND YEAR(attendance.check_in) = YEAR(CURDATE())'; // This month
         }
-        const [rows] = await pool.query(`SELECT * FROM attendance WHERE employee_id = ? AND ${dateFilter} LIMIT ? OFFSET ?`, [id ,limit, offset]);
-        const [[{ total }]] = await pool.query('SELECT COUNT(*) AS total FROM attendance');
+        const [rows] = await pool.query(`SELECT * FROM attendance INNER JOIN employees ON attendance.employee_id = employees.id WHERE ${dateFilter} AND employees.supervisor_id = ? LIMIT ? OFFSET ?`, [sp_id, limit, offset]);
+        const [[{ total }]] = await pool.query('SELECT COUNT(*) AS total FROM attendance INNER JOIN employees ON attendance.employee_id = employees.id WHERE supervisor_id = ?', [sp_id]);
         return {
             attendance: rows,
             total,

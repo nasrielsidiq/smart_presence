@@ -5,7 +5,6 @@ var bodyParser = require('body-parser');
 var util = require('util');
 
 class MonitorController {
-
     /**
      * Handle POST request for monitor.
      * @param {Object} req - The request object.
@@ -15,6 +14,10 @@ class MonitorController {
         try {
             const data = req.body;
             console.log("Full Data:", JSON.stringify(data, null, 2)); // Debug full structure
+            console.log(data?.["m2m:sgn"]?.["m2m:vrq"]);
+            if(data?.["m2m:sgn"]?.["m2m:vrq"] && !data?.["m2m:sgn"]?.["m2m:sud"]){
+                return res.status(200).json({ message: "Success to connect antares" });
+            }
             
             const rep = data?.["m2m:sgn"]?.["m2m:nev"]?.["m2m:rep"]; // Extract `m2m:rep`
             console.log("m2m:rep:", JSON.stringify(rep, null, 2)); // Check structure
@@ -35,17 +38,13 @@ class MonitorController {
     
             // Parse `con` content (as it is still in JSON string format)
             const content = JSON.parse(con);
-            attendanceController.attendancebySerialid(content.serial_id, res);
+            attendanceController.attendancebySerialid(content.serial_id, content.time, res);
             console.log("serial_id:", content.serial_id);
-
-            // console.log("Humidity:", content.humidity);
-    
         } catch (error) {
             console.error("Error parsing data:", error);
             return res.status(500).json({ error: "Internal Server Error" });
         }
     }
-
 }
 
 module.exports = MonitorController;

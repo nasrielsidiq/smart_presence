@@ -7,7 +7,7 @@ const validateEmployee = [
     body('full_name').notEmpty().withMessage('Full name is required'),
     body('position').notEmpty().withMessage('Position is required'),
     body('email').isEmail().withMessage('Invalid email format'),
-    body('no_hp').isMobilePhone('id_ID').withMessage('Invalid phone number'),
+    body('no_hp').isMobilePhone('id-ID').withMessage('Invalid phone number'),
 ];
 
 module.exports = validateEmployee;

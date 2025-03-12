@@ -13,74 +13,64 @@ class AttendanceController {
     /**
      * Create or update an attendance record for an employee.
      * @param {number} employee_id - The ID of the employee.
+     * @param {string} time - The time of the attendance.
      * @param {Object} res - The response object.
      */
-    async createOrUpdate(employee_id, res) {
+    async createOrUpdate(employee_id, time, res) {
         try {
             const employee = await Employee.findById(employee_id);
             if (!employee) {
-                var send = this.sendDataToAntares({
+                return this.sendDataToAntares({
                     success: false,
                     message: 'Employee not found',
+                    serial_id: null,
+                }, res);
+            }
+    
+            const exists = await Attendance.existsForDay(employee_id);
+    
+            if (exists) {
+                let success = await Attendance.create({ employee_id, time });
+    
+                return this.sendDataToAntares({
+                    success: !!success,
+                    message: success ? 'Attendance record updated successfully' : 'Failed to update attendance record',
                     serial_id: employee.serial_id,
                 }, res);
-                console.log(send);
-            }
-
-            const exists = await Attendance.existsForDay(employee_id);
-
-            if (exists) {
-                const success = await Attendance.create({ employee_id });
-
-                if (success) {
-                    var send = this.sendDataToAntares({
-                        success: true,
-                        message: 'Attendance record updated successfully',
-                        serial_id: employee.serial_id,
-                    }, res);
-                    console.log(send);
-                } else {
-                    var send = this.sendDataToAntares({
-                        success: true,
-                        message: 'Failed to update attendance record',
-                        serial_id: employee.serial_id,
-                    }, res);
-                    console.log(send);
-                }
             } else {
-                const id = await Attendance.create({ employee_id });
-
-                var send = this.sendDataToAntares({
+                let id = await Attendance.create({ employee_id, time });
+    
+                return this.sendDataToAntares({
                     success: true,
                     id,
                     message: 'Success to check in today',
                     serial_id: employee.serial_id,
                 }, res);
-                console.log(send);
             }
         } catch (error) {
-            const send = this.sendDataToAntares({
+            return this.sendDataToAntares({
                 success: false,
                 message: 'Failed to check in/check out today',
-                serial_id: employee.serial_id,
+                serial_id: null,
+                error: error.message,
             }, res);
-            console.log(send);
         }
     }
 
     /**
      * Handle attendance by serial ID.
      * @param {string} serial_id - The serial ID of the employee.
+     * @param {string} time - The time of the attendance.
      * @param {Object} res - The response object.
      */
-    async attendancebySerialid(serial_id, res) {
+    async attendancebySerialid(serial_id, time, res) {
         try {
             const attendance = await Employee.findBySerialId(serial_id);
             if (!attendance) {
                 res.status(404).json({ error: 'Attendance record not found' });
             }
             console.log(attendance);
-            this.createOrUpdate(attendance.id, res);
+            this.createOrUpdate(attendance.id, time, res);
         } catch (error) {
             res.status(500).json({ error: error.message });
         }
@@ -152,16 +142,27 @@ class AttendanceController {
             const page = parseInt(req.query.page, 10) || 1;
             const limit = parseInt(req.query.limit, 10) || 10;
             const period = req.query.period || 'daily';
-            const attendances = await Attendance.findAll({ page, limit, period });
+            const spId = parseInt(req.user.id);
+            console.log(spId);
+            let attendances;
+            if(req.user.privilege == 'supervisor'){
+                attendances = await Attendance.findAll({ page, limit, period, sp_id: spId });
+            }else{
+                attendances = await Attendance.findAll({ page, limit, period });
+            }
             res.json(attendances);
         } catch (error) {
             res.status(500).json({ error: error.message });
         }
     }
 
+    /**
+     * Retrieve individual attendance records for a specific employee.
+     * @param {Object} req - The request object.
+     * @param {Object} res - The response object.
+     */
     async getAttendancesIndividu(req, res) {
         try {
-
             const employee = await Employee.findById(req.params.id);
             if (!employee) {
                 return  res.status(404).json({ error: 'Employee not found' });
