@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const helmet = require('helmet');
 var bodyParser = require('body-parser');
 const { validationResult } = require('express-validator');
 const IndexController = require('../controllers/index.js');
@@ -62,6 +63,7 @@ function setRoutes(app) {
     // Setup Global Middleware
     app.use(cors());
     app.use(express.json());
+    app.use(helmet());
     app.use(bodyParser.json());
     app.use(bodyParser.urlencoded({ extended: false }));
     // app.use(limiter);
@@ -109,6 +111,7 @@ function setRoutes(app) {
     // 🔹 Attendance routes
     router.post('/attendances', attendanceController.attendancebySerialid);
     router.get('/attendances', attendanceController.getAttendances);
+    router.get('/attendances/rank', attendanceController.checkRankAttendance);
     router.get('/attendances/:id', attendanceController.getAttendancesIndividu);
     router.get('/attendance/:id', attendanceController.checkEmployeeAttendance);
 

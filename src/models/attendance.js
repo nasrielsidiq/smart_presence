@@ -19,6 +19,7 @@ class Attendance {
         console.log(`Parsed time: ${now}`);
         console.log(`Hours: ${hours}, Minutes: ${minutes}`);
 
+        
         const status_check_in = (hours < 8 || (hours === 8 && minutes <= 15)) ? "on_time" : "late";
         console.log(`Status Check-In: ${status_check_in}`);
 
@@ -29,12 +30,17 @@ class Attendance {
             // Update the existing record
             let status_check_out = "";
 
-            if (hours < 17) {
-                status_check_out = "early";
-            } else if (hours > 17 || (hours === 17 && minutes <= 15)) {
-                status_check_out = "on_time";
-            } else {
-                status_check_out = "late";
+
+            if(hours >= 15){
+                if (hours < 17) {
+                    status_check_out = "early";
+                } else if (hours === 17 && minutes <= 15) {
+                    status_check_out = "on_time";
+                } else {
+                    status_check_out = "late";
+                }
+            }else{
+                return false;
             }
 
             const category = await this.categoryStatus(exists.status_check_in, status_check_out);
@@ -46,6 +52,8 @@ class Attendance {
             return result.affectedRows > 0;
         } else {
             // Create a new record
+
+    
             const [result] = await pool.query(
                 'INSERT INTO attendance (employee_id, check_in, check_out, status_check_in, status_check_out, category) VALUES (?, ?, null, ?, null, null)',
                 [employee_id, time, status_check_in]
@@ -209,6 +217,44 @@ class Attendance {
         const [rows] = await pool.query('SELECT COUNT(*) as total FROM attendance');
         return rows[0].total;
     }
+
+    static async getEmployeeRanking({ spId = null }) {
+        try {
+            let query = `
+                SELECT 
+                    e.id AS employee_id,
+                    e.full_name AS employee_name,
+                    COUNT(a.id) AS total_attendance,
+                    SUM(
+                        CASE 
+                            WHEN a.category = 'discipline' THEN 2
+                            WHEN a.category = 'overtime' THEN 1
+                            ELSE 0 
+                        END
+                    ) AS total_score
+                FROM employees e
+                LEFT JOIN attendance a ON e.id = a.employee_id
+            `;
+    
+            let params = [];
+    
+            if (spId) {
+                query += ` WHERE e.supervisor_id = ?`;
+                params.push(spId);
+            }
+    
+            query += ` GROUP BY e.id, e.full_name ORDER BY total_score DESC, total_attendance DESC`;
+    
+            const [rows] = await pool.query(query, params);
+            console.log("Query Result:", rows); // Debugging
+            return rows;
+        } catch (error) {
+            console.error("Error fetching employee ranking:", error);
+            throw error; 
+        }
+    }
+    
+    
 }
 
 module.exports = Attendance;

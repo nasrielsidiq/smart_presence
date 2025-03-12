@@ -117,6 +117,20 @@ class AttendanceController {
         }
     }
 
+    async checkRankAttendance(req, res) {
+        try{
+            let attendanceRank;
+            if(req.user.privilege == 'supervisor'){
+                attendanceRank = await Attendance.getEmployeeRanking({spId: req.user.id});
+            }else{
+                attendanceRank = await Attendance.getEmployeeRanking({});
+            }
+            res.status(200).json(attendanceRank);
+        }catch(error){
+            res.status(500).json({ error: error.message });
+        }
+    }
+
     /**
      * Check employee attendance for the current day.
      * @param {Object} req - The request object.
