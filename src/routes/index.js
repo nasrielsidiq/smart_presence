@@ -19,9 +19,11 @@ const validateDivision = require('../validators/divisionValidator');
 const validateOffice = require('../validators/officeValidator');
 
 const router = express.Router();
+const path = require('path');
 const rateLimit = require("express-rate-limit");
 const authMiddleware = require('../middlewares/auth');
 const roleMiddleware = require('../middlewares/roleMiddleware');
+const upload = require('../middlewares/uploadMiddleware');
 const indexController = new IndexController();
 const userController = new UserController();
 const officeController = new OfficeController();
@@ -66,6 +68,7 @@ function setRoutes(app) {
     app.use(helmet());
     app.use(bodyParser.json());
     app.use(bodyParser.urlencoded({ extended: false }));
+    app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
     // app.use(limiter);
 
     // Use router '/api' after all middleware is set up
@@ -127,10 +130,11 @@ function setRoutes(app) {
     router.use(roleMiddleware(['admin']));
 
     // 🔹 User CRUD routes
-    router.post('/users', validateUser, handleValidationErrors, userController.createUser);
+    router.post('/users', upload.single('image_profile'), validateUser, handleValidationErrors, userController.createUser);
     router.get('/users', userController.getUsers);
+    router.get('/users/:id/image', userController.getImageProfileById);
     router.get('/users/:id', userController.getUserById);
-    router.put('/users/:id', validateUser, handleValidationErrors, userController.updateUser);
+    router.put('/users/:id', upload.single('image_profile'), validateUser, handleValidationErrors, userController.updateUser);
     router.delete('/users/:id', userController.deleteUser);
 
     // 🔹 Employee CRUD routes

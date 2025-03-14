@@ -7,13 +7,12 @@ const jwt = require('jsonwebtoken');
  * @param {Function} next - The next middleware function.
  */
 const authMiddleware = (req, res, next) => {
-    const token = req.header('Authorization');
-
-    if (!token) {
-        return res.status(401).json({ error: 'Access denied. No token provided.' });
-    }
-
     try {
+        const token = req.header('Authorization');
+
+        if (!token) {
+            return res.status(401).json({ error: 'Access denied. No token provided.' });
+        }
         const secretKey = 'your_jwt_secret'; // Replace with a secure secret key
         const decoded = jwt.verify(token.replace('Bearer ', ''), secretKey);
         req.user = decoded;

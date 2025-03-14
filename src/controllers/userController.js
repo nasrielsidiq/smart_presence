@@ -1,5 +1,11 @@
 const User = require('../models/user.js');
 const bcrypt = require('bcrypt');   
+const path = require('path');
+const fs = require('fs');
+const Employee = require('../models/employee.js');
+const Division = require('../models/division.js');
+const Office = require('../models/office.js');
+
 
 class UserController {
     /**
@@ -9,8 +15,19 @@ class UserController {
      */
     async createUser(req, res) {
         try {
+
+            const employee = await Employee.findBySerialId(req.body.serial_id);
+            if (!employee) {
+                return res.status(404).json({ error: 'Employee serial_id not found' });
+            }
+
             const hashedPassword = await bcrypt.hash(req.body.password, 10);
             req.body.password = hashedPassword;
+            if(req.file){
+                req.body.image_profile = req.file.filename;
+            }else{
+                req.body.image_profile = null;
+            }
             const userId = await User.create(req.body);
             res.status(201).json({ id: userId });
         } catch (error) {
@@ -45,12 +62,15 @@ class UserController {
     async getCurrentUser(req, res) {
         try {
             const user = await User.findById(req.user.id);
-    
+            const employee = await Employee.findBySerialId(req.user.serial_id);
+            const division = await Division.findById(employee.division_id);
+            const office = await Office.findById(employee.office_id);
+
             if (!user) {
                 return res.status(404).json({ message: "User not found" });
             }
     
-            res.json(user);
+            res.json({user, employee, division, office});
         } catch (error) {
             res.status(500).json({ error: error.message });
         }
@@ -65,8 +85,6 @@ class UserController {
         try {
             const user = {
                 username: req.body.username,
-                email: req.body.email,
-                no_hp: req.body.no_hp,
                 password: req.body.password || null
             };
 
@@ -100,6 +118,24 @@ class UserController {
         }
     }
 
+    async getImageProfileById(req, res) {
+        try {
+            const user = await User.findById(req.params.id);
+            if (user) {
+                if(user.image_profile){
+                    const uploadsDir = path.resolve(__dirname, '../uploads/users');
+                    res.sendFile(path.join(uploadsDir, user.image_profile));
+                }else{
+                    res.status(404).json({ error: 'Image not found' });
+                }
+            } else {
+                res.status(404).json({ error: 'User not found' });
+            }
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    }
+
     /**
      * Update a user by ID.
      * @param {Object} req - The request object.
@@ -107,6 +143,13 @@ class UserController {
      */
     async updateUser(req, res) {
         try {
+            
+            if(req.file){
+                req.body.image_profile = req.file.filename;
+            }else{
+                req.body.image_profile = null;
+            }
+            
             const status = await User.update(req.params.id, req.body);
 
             if (!status) {
@@ -127,6 +170,26 @@ class UserController {
      */
     async deleteUser(req, res) {
         try {
+
+            const user = await User.findById(req.params.id);
+            if (!user) {
+                res.status(404).json({ error: 'User not found' });
+                return;
+            }
+            console.log(user);
+            if(user.id === req.user.id){
+                res.status(403).json({ error: 'You cannot delete your own account' });
+                return;
+            }
+
+            const uploadsDir = path.resolve(__dirname, '../uploads/users');
+            const imageDir = path.join(uploadsDir, user.image_profile);
+
+            // 2️⃣ Hapus file dari sistem jika ada
+            if (fs.existsSync(imageDir)) {
+                fs.unlinkSync(imageDir);
+            }
+
             const status = await User.delete(req.params.id);
             if (!status) {
                 res.status(404).json({ error: 'User not found' });

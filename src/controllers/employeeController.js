@@ -99,6 +99,17 @@ class EmployeeController {
      */
     async delete(req, res) {
         try {
+
+            const employee = await Employee.findById(req.params.id);
+            if (!employee) {
+                return res.status(404).json({ error: 'Employee not found' });
+            }
+
+            const user = await User.findBySerialId(employee.serial_id);
+            if (user) {
+                return res.status(403).json({ error: "Can't delete this employee because this employee have an user account" });
+            }
+
             const success = await Employee.delete(req.params.id);
     
             if (success) {

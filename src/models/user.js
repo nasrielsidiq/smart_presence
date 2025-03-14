@@ -14,10 +14,10 @@ class User {
      * @returns {Promise<number>} - The ID of the created user.
      */
     static async create(user) {
-        const { username, email, password, serial_id, no_hp, privilage } = user;
+        const { username, email, password, serial_id, privilage, image_profile = null } = user;
         const [result] = await pool.query(
-            'INSERT INTO users (username, email, password, serial_id, no_hp, privilage, created_at) VALUES (?, ?, ?, ?, ?, ?, NOW())',
-            [username, email, password, serial_id, no_hp, privilage]
+            'INSERT INTO users (username, email, password, serial_id, privilage, image_profile, created_at) VALUES (?, ?, ?, ?, ?, ?, NOW())',
+            [username, email, password, serial_id, privilage, image_profile]
         );
         return result.insertId;
     }
@@ -28,7 +28,7 @@ class User {
      */
     static async findAll({ page = 1, limit = 10 }) {
         const offset = (page - 1) * limit;
-        const [rows] = await pool.query('SELECT id, username, email, serial_id, no_hp, privilage, created_at FROM users LIMIT ? OFFSET ?', [limit, offset]);
+        const [rows] = await pool.query('SELECT id, username, email, serial_id, privilage, image_profile, created_at FROM users LIMIT ? OFFSET ?', [limit, offset]);
         const [[{ total }]] = await pool.query('SELECT COUNT(*) AS total FROM users');
         return {
             users: rows,
@@ -44,7 +44,7 @@ class User {
      * @returns {Promise<Object|null>} - The user record if found, otherwise null.
      */
     static async findById(id) {
-        const [rows] = await pool.query('SELECT * FROM users WHERE id = ?', [id]);
+        const [rows] = await pool.query('SELECT id, username, email, serial_id, privilage, image_profile, created_at FROM users WHERE id = ?', [id]);
         return rows[0];
     }
 
@@ -55,6 +55,12 @@ class User {
      */
     static async findByUsername(username) {
         const [rows] = await pool.query('SELECT * FROM users WHERE username = ?', [username]);
+        return rows[0];
+    }
+
+
+    static async findBySerialId(serial_id) {
+        const [rows] = await pool.query('SELECT * FROM users WHERE serial_id = ?', [serial_id]);
         return rows[0];
     }
 
@@ -72,10 +78,30 @@ class User {
      */
     static async update(id, user) {
         try {
-            const { username, email, password, serial_id, no_hp, privilage } = user;
+            const { username, email, password, privilage, image_profile } = user;
+            console.log(user);
+            // Retrieve old password if no new password is provided
+            const [rows] = await pool.query('SELECT password, image_profile FROM users WHERE id = ?', [id]);
+            if (rows.length === 0) {
+                throw new Error('User not found');
+            }
+    
+            // Hash new password if provided
+            let newPassword = rows[0].password;
+            if (password) {
+                newPassword = await bcrypt.hash(password, 10);
+            }
+            
+            let newImage = rows[0].image_profile;
+            if (image_profile) {
+                newImage = image_profile;
+            }
+
+            console.log(rows);
+
             const [status] = await pool.query(
-                'UPDATE users SET username = ?, email = ?, password = ?, serial_id = ?, no_hp = ?, privilage = ? WHERE id = ?',
-                [username, email, password, serial_id, no_hp, privilage, id]
+                'UPDATE users SET username = ?, email = ?, password = ?, privilage = ?, image_profile = ? WHERE id = ?',
+                [username, email, newPassword, privilage, newImage, id]
             );
 
             return status.affectedRows > 0;
@@ -97,7 +123,7 @@ class User {
      */
     static async updateCurrentUser(id, user) {
         try {
-            let { username, email, password, no_hp } = user;
+            let { username, password } = user;
     
             // Retrieve old password if no new password is provided
             const [rows] = await pool.query('SELECT password FROM users WHERE id = ?', [id]);
@@ -113,8 +139,8 @@ class User {
     
             // Perform update
             const [status] = await pool.query(
-                'UPDATE users SET username = ?, email = ?, password = ?, no_hp = ? WHERE id = ?',
-                [username, email, newPassword, no_hp, id]
+                'UPDATE users SET username = ?, password = ? WHERE id = ?',
+                [username, newPassword, id]
             );
     
             return status.affectedRows > 0;
