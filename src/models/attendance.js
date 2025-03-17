@@ -117,10 +117,10 @@ class Attendance {
 
         if (sp_id) {
             [rows] = await pool.query(`SELECT a.id, a.employee_id, e.full_name, a.check_in, a.check_out, a.status_check_in, a.status_check_out, a.category, e.office_id, e.serial_id, e.position, d.name AS division_name, o.name AS office_name FROM attendance a INNER JOIN employees e ON a.employee_id = e.id INNER JOIN divisions d ON e.division_id = d.id INNER JOIN offices o ON e.office_id = o.id WHERE ${dateFilter} AND e.supervisor_id = ? LIMIT ? OFFSET ?`, [sp_id, limit, offset]);
-            [[{ total }]] = await pool.query('SELECT COUNT(*) AS total FROM attendance INNER JOIN employees ON attendance.employee_id = employees.id WHERE supervisor_id = ?', [sp_id]);
+            [[{ total }]] = await pool.query(`SELECT COUNT(*) AS total FROM attendance a INNER JOIN employees e ON a.employee_id = e.id INNER JOIN divisions d ON e.division_id = d.id INNER JOIN offices o ON e.office_id = o.id WHERE ${dateFilter} AND e.supervisor_id = ? LIMIT ? OFFSET ?`, [sp_id, limit, offset]);
         } else {
             [rows] = await pool.query(`SELECT a.id, a.employee_id, e.full_name, a.check_in, a.check_out, a.status_check_in, a.status_check_out, a.category, e.office_id, e.serial_id, e.position, d.name AS division_name, o.name AS office_name FROM attendance a INNER JOIN employees e ON a.employee_id = e.id INNER JOIN divisions d ON e.division_id = d.id INNER JOIN offices o ON e.office_id = o.id WHERE ${dateFilter} LIMIT ? OFFSET ?`, [limit, offset]);
-            [[{ total }]] = await pool.query('SELECT COUNT(*) AS total FROM attendance');
+            [[{ total }]] = await pool.query(`SELECT COUNT(*) AS total FROM attendance`);
         }
 
         return {
@@ -140,7 +140,7 @@ class Attendance {
      * @param {number} options.id - The ID of the employee.
      * @returns {Promise<Object>} - An object containing the attendance records, total records, total pages, and current page.
      */
-    static async IndividuAttendanceAll({ page = 1, limit = 10, period = 'daily', id }) {
+    static async IndividuAttendanceAll({ page = 1, limit = 10, period = 'daily', employee_id }) {
         const offset = (page - 1) * limit;
         let dateFilter = '1=2';
         // Filter based on the time period
@@ -151,8 +151,8 @@ class Attendance {
         } else if (period === 'monthly') {
             dateFilter = 'MONTH(check_in) = MONTH(CURDATE()) AND YEAR(check_in) = YEAR(CURDATE())'; // This month
         }
-        const [rows] = await pool.query(`SELECT * FROM attendance WHERE employee_id = ? AND ${dateFilter} LIMIT ? OFFSET ?`, [id, limit, offset]);
-        const [[{ total }]] = await pool.query('SELECT COUNT(*) AS total FROM attendance');
+        const [rows] = await pool.query(`SELECT a.id, a.employee_id, e.full_name, a.check_in, a.check_out, a.status_check_in, a.status_check_out, a.category, e.office_id, e.serial_id, e.position, d.name AS division_name, o.name AS office_name FROM attendance a INNER JOIN employees e ON a.employee_id = e.id INNER JOIN divisions d ON e.division_id = d.id INNER JOIN offices o ON e.office_id = o.id WHERE a.employee_id = ? AND ${dateFilter} LIMIT ? OFFSET ?`, [employee_id, limit, offset]);
+        const [[{ total }]] = await pool.query(`SELECT COUNT(*) AS total FROM attendance a INNER JOIN employees e ON a.employee_id = e.id INNER JOIN divisions d ON e.division_id = d.id INNER JOIN offices o ON e.office_id = o.id WHERE a.employee_id = ? AND ${dateFilter} LIMIT ? OFFSET ?`, [employee_id, limit, offset]);
         return {
             attendance: rows,
             total,
@@ -184,10 +184,16 @@ class Attendance {
      * Get the total number of attendance records.
      * @returns {Promise<number>} - The total number of attendance records.
      */
-    static async totalAbcent() {
-        const [rows] = await pool.query('SELECT COUNT(*) as total FROM attendance');
-        return rows[0].total;
+    static async totalAbsent() {
+        const [[{ absent_today }]] = await pool.query(`
+            SELECT 
+                (SELECT COUNT(*) FROM employees) - 
+                (SELECT COUNT(DISTINCT employee_id) FROM attendance WHERE DATE(check_in) = CURDATE()) 
+            AS absent_today
+        `);
+        return absent_today;
     }
+    
 
     static async getEmployeeRanking({ spId = null }) {
         try {
@@ -224,6 +230,30 @@ class Attendance {
             throw error; 
         }
     }
+
+    static async grafikPerBulan() {
+        try {
+            const [rows] = await pool.query(`
+                SELECT 
+                    MONTH(check_in) AS month,
+                    d.id AS division_id,
+                    d.name AS division_name,
+                    COUNT(CASE WHEN category = "discipline" THEN 1 END) AS disciplineChart,
+                    COUNT(CASE WHEN category = "undiscipline" THEN 1 END) AS undisciplineChart
+                FROM attendance a
+                INNER JOIN employees e ON a.employee_id = e.id
+                INNER JOIN divisions d ON e.division_id = d.id
+                WHERE YEAR(a.check_in) = YEAR(CURDATE())
+                GROUP BY d.id, MONTH(a.check_in)
+                ORDER BY d.id, MONTH(a.check_in)
+            `);
+            return rows;
+        } catch (error) {
+            console.error('Error fetching attendance per month:', error);
+            throw error;
+        }
+    }
+    
     
     
 }

@@ -37,8 +37,6 @@ class UserController {
                         fs.unlinkSync(filePath);
                     }
                 }
-                // return res.status(400).json({ error: "Username and email are required" });
-            
             res.status(500).json({ error: error.message });
         }
     }

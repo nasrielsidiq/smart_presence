@@ -157,7 +157,7 @@ class AttendanceController {
             const limit = parseInt(req.query.limit, 10) || 10;
             const period = req.query.period || 'daily';
             const spId = parseInt(req.user.id);
-            console.log(spId);
+            // console.log(spId);
             let attendances;
             if(req.user.privilege == 'supervisor'){
                 attendances = await Attendance.findAll({ page, limit, period, sp_id: spId });
@@ -186,7 +186,8 @@ class AttendanceController {
             const limit = parseInt(req.query.limit, 10) || 10;
             const period = req.query.period || 'daily';
             const employee_id = employee.id;
-            const attendances = await Attendance.findAll({ page, limit, period, employee_id});
+            console.log(employee_id);
+            const attendances = await Attendance.IndividuAttendanceAll({ page, limit, period, employee_id});
             res.json(attendances);
         } catch (error) {
             res.status(500).json({ error: error.message });

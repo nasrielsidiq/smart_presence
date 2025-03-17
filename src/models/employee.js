@@ -26,11 +26,14 @@ class Employee {
 
     /**
      * Retrieve all employees.
-     * @returns {Promise<Array>} - An array of employee records.
+     * @param {Object} options - The options for retrieving employees.
+     * @param {number} [options.page=1] - The page number.
+     * @param {number} [options.limit=10] - The number of records per page.
+     * @returns {Promise<Object>} - An object containing the employee records, total records, total pages, and current page.
      */
     static async findAll({ page = 1, limit = 10 }) {
         const offset = (page - 1) * limit;
-        const [rows] = await pool.query('SELECT * FROM employees LIMIT ? OFFSET ?', [limit, offset]);
+        const [rows] = await pool.query('SELECT e.id, e.full_name, d.name as division_name, o.name as office_name, o.city as office_city, o.address as office_address, e.serial_id  FROM employees e INNER JOIN offices o ON e.office_id = o.id INNER JOIN divisions d ON e.division_id = d.id LIMIT ? OFFSET ?', [limit, offset]);
         const [[{ total }]] = await pool.query('SELECT COUNT(*) AS total FROM employees');
         return {
             employees: rows,
@@ -40,7 +43,13 @@ class Employee {
         };
     }
 
-
+    /**
+     * Retrieve all employees under a specific supervisor.
+     * @param {Object} options - The options for retrieving employees.
+     * @param {number} [options.page=1] - The page number.
+     * @param {number} [options.limit=10] - The number of records per page.
+     * @returns {Promise<Object>} - An object containing the employee records, total records, total pages, and current page.
+     */
     static async svFindAll({ page = 1, limit = 10 }) {
         const offset = (page - 1) * limit;
         const supervisor_id = req.user.id;
@@ -105,6 +114,28 @@ class Employee {
     }
 
     /**
+     * Update the on-leave status of an employee by ID.
+     * @param {number} id - The ID of the employee.
+     * @param {Object} employee - The updated employee data.
+     * @param {boolean} employee.is_active - The on-leave status of the employee.
+     * @returns {Promise<boolean>} - A boolean indicating whether the update was successful.
+     */
+    static async updateOnLeave(id, employee) {
+        try {
+            const { is_active } = employee;
+            const [update] = await pool.query(
+                'UPDATE employees SET is_active = ? WHERE id = ?',
+                [is_active, id]
+            );
+
+            return update.affectedRows > 0; 
+        } catch (error) {
+            console.error('Error updating employee:', error);
+            throw new Error('Failed to update employee');
+        }
+    }
+
+    /**
      * Delete an employee by ID.
      * @param {number} id - The ID of the employee.
      * @returns {Promise<boolean>} - A boolean indicating whether the deletion was successful.
@@ -125,6 +156,15 @@ class Employee {
      */
     static async totalEmployee() {
         const [rows] = await pool.query('SELECT COUNT(*) as total FROM employees');
+        return rows[0].total;
+    }
+
+    /**
+     * Get the total number of employees on leave.
+     * @returns {Promise<number>} - The total number of employees on leave.
+     */
+    static async totalOnLeave() {
+        const [rows] = await pool.query('SELECT COUNT(*) as total FROM employees WHERE is_active = "on_leave"');
         return rows[0].total;
     }
 }

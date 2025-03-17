@@ -142,6 +142,7 @@ function setRoutes(app) {
 
     // 🔹 Dashboard routes
     router.get('/dashboard', dashboardController.index);
+    router.get('/dashboard/chart', dashboardController.chart);
 
     // 🔹 Fake route for testing
     router.post('/fakeRoute', (req, res) => {
@@ -162,6 +163,7 @@ function setRoutes(app) {
     // 🔹 Employee CRUD routes
     router.post('/employees', validateEmployee, handleValidationErrors, employeeController.create);
     router.get('/employees', employeeController.findAll);
+    router.put('/employees/active/:id', employeeController.updateOnLeave);
     router.get('/employees/:id', employeeController.findById);
     router.put('/employees/:id', validateEmployee, handleValidationErrors, employeeController.update);
     router.delete('/employees/:id', employeeController.delete);

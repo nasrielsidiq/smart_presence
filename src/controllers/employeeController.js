@@ -92,6 +92,20 @@ class EmployeeController {
         }
     }
 
+    async updateOnLeave(req, res) {
+        try {
+            const success = await Employee.updateOnLeave(req.params.id, req.body);
+
+            if (!success) {
+                res.status(404).json({ error: 'Employee not found' });
+                return;
+            }
+            res.json({ message: 'Employee updated successfully' });
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    }
+
     /**
      * Delete an employee by ID.
      * @param {Object} req - The request object.

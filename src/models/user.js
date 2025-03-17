@@ -6,7 +6,6 @@ class User {
      * Create a new user.
      * @param {Object} user - The user data.
      * @param {string} user.username - The username of the user.
-     * @param {string} user.email - The email of the user.
      * @param {string} user.password - The password of the user.
      * @param {string} user.serial_id - The serial ID of the user.
      * @param {string} user.no_hp - The phone number of the user.
@@ -14,22 +13,26 @@ class User {
      * @returns {Promise<number>} - The ID of the created user.
      */
     static async create(user) {
-        const { username, email, password, serial_id, privilage, image_profile = null } = user;
+        const { username, password, serial_id, privilage, image_profile = null } = user;
         const [result] = await pool.query(
-            'INSERT INTO users (username, email, password, serial_id, privilage, image_profile, created_at) VALUES (?, ?, ?, ?, ?, ?, NOW())',
-            [username, email, password, serial_id, privilage, image_profile]
+            'INSERT INTO users (username, password, serial_id, privilage, image_profile, created_at) VALUES (?, ?, ?, ?, ?, NOW())',
+            [username, password, serial_id, privilage, image_profile]
         );
         return result.insertId;
     }
 
     /**
      * Retrieve all users.
-     * @returns {Promise<Array>} - An array of user records.
+     * @param {Object} options - The options for retrieving users.
+     * @param {number} [options.page=1] - The page number.
+     * @param {number} [options.limit=10] - The number of records per page.
+     * @param {number} options.id - The ID of the user making the request.
+     * @returns {Promise<Object>} - An object containing the user records, total records, total pages, and current page.
      */
     static async findAll({ page = 1, limit = 10, id }) {
         const offset = (page - 1) * limit;
-        const [rows] = await pool.query('SELECT id, username, email, serial_id, privilage, image_profile, created_at FROM users WHERE id != ? LIMIT ? OFFSET ?', [id, limit, offset]);
-        const [[{ total }]] = await pool.query('SELECT COUNT(*) AS total FROM users');
+        const [rows] = await pool.query('SELECT u.id, username, e.email, e.serial_id, privilage, image_profile, d.name AS division_name, u.created_at FROM users u INNER JOIN employees e ON u.serial_id = e.serial_id INNER JOIN divisions d ON e.division_id = d.id WHERE u.id != ? LIMIT ? OFFSET ?', [id, limit, offset]);
+        const [[{ total }]] = await pool.query('SELECT COUNT(*) AS total FROM users u INNER JOIN employees e ON u.serial_id = e.serial_id INNER JOIN divisions d ON e.division_id = d.id WHERE u.id != ? LIMIT ? OFFSET ?', [id, limit, offset]);
         return {
             users: rows,
             total,
@@ -44,7 +47,7 @@ class User {
      * @returns {Promise<Object|null>} - The user record if found, otherwise null.
      */
     static async findById(id) {
-        const [rows] = await pool.query('SELECT id, username, email, serial_id, privilage, image_profile, created_at FROM users WHERE id = ?', [id]);
+        const [rows] = await pool.query('SELECT id, username, serial_id, privilage, image_profile, created_at FROM users WHERE id = ?', [id]);
         return rows[0];
     }
 
@@ -58,7 +61,11 @@ class User {
         return rows[0];
     }
 
-
+    /**
+     * Find a user by serial ID.
+     * @param {string} serial_id - The serial ID of the user.
+     * @returns {Promise<Object|null>} - The user record if found, otherwise null.
+     */
     static async findBySerialId(serial_id) {
         const [rows] = await pool.query('SELECT * FROM users WHERE serial_id = ?', [serial_id]);
         return rows[0];
@@ -69,7 +76,6 @@ class User {
      * @param {number} id - The ID of the user.
      * @param {Object} user - The updated user data.
      * @param {string} user.username - The username of the user.
-     * @param {string} user.email - The email of the user.
      * @param {string} user.password - The password of the user.
      * @param {string} user.serial_id - The serial ID of the user.
      * @param {string} user.no_hp - The phone number of the user.
@@ -78,7 +84,7 @@ class User {
      */
     static async update(id, user) {
         try {
-            const { username, email, password, privilage, image_profile } = user;
+            const { username, password, privilage, image_profile } = user;
             console.log(user);
             // Retrieve old password if no new password is provided
             const [rows] = await pool.query('SELECT password, image_profile FROM users WHERE id = ?', [id]);
@@ -100,8 +106,8 @@ class User {
             console.log(rows);
 
             const [status] = await pool.query(
-                'UPDATE users SET username = ?, email = ?, password = ?, privilage = ?, image_profile = ? WHERE id = ?',
-                [username, email, newPassword, privilage, newImage, id]
+                'UPDATE users SET username = ?, password = ?, privilage = ?, image_profile = ? WHERE id = ?',
+                [username, newPassword, privilage, newImage, id]
             );
 
             return status.affectedRows > 0;
@@ -116,7 +122,6 @@ class User {
      * @param {number} id - The ID of the user.
      * @param {Object} user - The updated user data.
      * @param {string} user.username - The username of the user.
-     * @param {string} user.email - The email of the user.
      * @param {string} [user.password] - The new password of the user (optional).
      * @param {string} user.no_hp - The phone number of the user.
      * @returns {Promise<boolean>} - A boolean indicating whether the update was successful.
