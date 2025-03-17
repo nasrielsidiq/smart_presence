@@ -116,10 +116,10 @@ class Attendance {
         let total = 0;
 
         if (sp_id) {
-            [rows] = await pool.query(`SELECT * FROM attendance INNER JOIN employees ON attendance.employee_id = employees.id WHERE ${dateFilter} AND employees.supervisor_id = ? LIMIT ? OFFSET ?`, [sp_id, limit, offset]);
+            [rows] = await pool.query(`SELECT a.id, a.employee_id, e.full_name, a.check_in, a.check_out, a.status_check_in, a.status_check_out, a.category, e.office_id, e.serial_id, e.position, d.name AS division_name, o.name AS office_name FROM attendance a INNER JOIN employees e ON a.employee_id = e.id INNER JOIN divisions d ON e.division_id = d.id INNER JOIN offices o ON e.office_id = o.id WHERE ${dateFilter} AND e.supervisor_id = ? LIMIT ? OFFSET ?`, [sp_id, limit, offset]);
             [[{ total }]] = await pool.query('SELECT COUNT(*) AS total FROM attendance INNER JOIN employees ON attendance.employee_id = employees.id WHERE supervisor_id = ?', [sp_id]);
         } else {
-            [rows] = await pool.query(`SELECT * FROM attendance WHERE ${dateFilter} LIMIT ? OFFSET ?`, [limit, offset]);
+            [rows] = await pool.query(`SELECT a.id, a.employee_id, e.full_name, a.check_in, a.check_out, a.status_check_in, a.status_check_out, a.category, e.office_id, e.serial_id, e.position, d.name AS division_name, o.name AS office_name FROM attendance a INNER JOIN employees e ON a.employee_id = e.id INNER JOIN divisions d ON e.division_id = d.id INNER JOIN offices o ON e.office_id = o.id WHERE ${dateFilter} LIMIT ? OFFSET ?`, [limit, offset]);
             [[{ total }]] = await pool.query('SELECT COUNT(*) AS total FROM attendance');
         }
 
@@ -161,35 +161,6 @@ class Attendance {
         };
     }
 
-    /**
-     * Retrieve attendance records for employees under a specific supervisor.
-     * @param {Object} options - The options for retrieving attendance records.
-     * @param {number} [options.page=1] - The page number.
-     * @param {number} [options.limit=10] - The number of records per page.
-     * @param {string} [options.period='daily'] - The period for filtering records (daily, weekly, monthly).
-     * @param {number} options.sp_id - The supervisor ID.
-     * @returns {Promise<Object>} - An object containing the attendance records, total records, total pages, and current page.
-     */
-    static async spfindAll({ page = 1, limit = 10, period = 'daily', sp_id }) {
-        const offset = (page - 1) * limit;
-        let dateFilter = '1=2';
-        // Filter based on the time period
-        if (period === 'daily') {
-            dateFilter = 'DATE(attendance.check_in) = CURDATE()'; // Today
-        } else if (period === 'weekly') {
-            dateFilter = 'YEARWEEK(attendance.check_in, 1) = YEARWEEK(CURDATE(), 1)'; // This week
-        } else if (period === 'monthly') {
-            dateFilter = 'MONTH(attendance.check_in) = MONTH(CURDATE()) AND YEAR(attendance.check_in) = YEAR(CURDATE())'; // This month
-        }
-        const [rows] = await pool.query(`SELECT * FROM attendance INNER JOIN employees ON attendance.employee_id = employees.id WHERE ${dateFilter} AND employees.supervisor_id = ? LIMIT ? OFFSET ?`, [sp_id, limit, offset]);
-        const [[{ total }]] = await pool.query('SELECT COUNT(*) AS total FROM attendance INNER JOIN employees ON attendance.employee_id = employees.id WHERE supervisor_id = ?', [sp_id]);
-        return {
-            attendance: rows,
-            total,
-            totalPages: Math.ceil(total / limit),
-            currentPage: page
-        };
-    }
 
     /**
      * Get the total number of on-time attendance records.

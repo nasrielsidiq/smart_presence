@@ -31,6 +31,14 @@ class UserController {
             const userId = await User.create(req.body);
             res.status(201).json({ id: userId });
         } catch (error) {
+                if (req.file) {
+                    const filePath = path.resolve(__dirname, '../uploads/users', req.file.filename);
+                    if (fs.existsSync(filePath)) {
+                        fs.unlinkSync(filePath);
+                    }
+                }
+                // return res.status(400).json({ error: "Username and email are required" });
+            
             res.status(500).json({ error: error.message });
         }
     }
@@ -45,8 +53,9 @@ class UserController {
 
             const page = parseInt(req.query.page, 10) || 1;
             const limit = parseInt(req.query.limit, 10) || 10;
+            const id = req.user.id;
     
-            const users = await User.findAll({ page, limit });
+            const users = await User.findAll({ page, limit, id });
     
             res.json(users);
         } catch (error) {

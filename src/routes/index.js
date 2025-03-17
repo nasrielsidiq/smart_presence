@@ -48,6 +48,30 @@ const handleValidationErrors = (req, res, next) => {
     next();
 };
 
+const handleValidationErrorsUser = (req, res, next) => {
+    const errors = validationResult(req);
+
+    if (!errors.isEmpty()) {
+        const uploadsDir = path.resolve(__dirname, '../uploads/users');
+
+        // 🔹 Hapus file jika sudah ter-upload
+        if (req.file) {
+            const filePath = path.join(uploadsDir, req.file.filename);
+            try {
+                if (fs.existsSync(filePath)) {
+                    fs.unlinkSync(filePath); // Hapus file
+                }
+            } catch (err) {
+                console.error('Error deleting file:', err);
+            }
+        }
+
+        return res.status(400).json({ errors: errors.array() });
+    }
+    
+    next();
+};
+
 /**
  * Rate limiter middleware to limit requests.
  */
@@ -80,8 +104,6 @@ function setRoutes(app) {
     // 🔹 Auth routes
     router.post('/login', authController.login);
     router.get('/logout', authController.logout);
-
-
 
     // 🔹 Authentication Middleware (Login Required)
     router.use(authMiddleware);
@@ -130,7 +152,7 @@ function setRoutes(app) {
     router.use(roleMiddleware(['admin']));
 
     // 🔹 User CRUD routes
-    router.post('/users', upload.single('image_profile'), validateUser, handleValidationErrors, userController.createUser);
+    router.post('/users', upload.single('image_profile'), validateUser, handleValidationErrorsUser, userController.createUser);
     router.get('/users', userController.getUsers);
     router.get('/users/:id/image', userController.getImageProfileById);
     router.get('/users/:id', userController.getUserById);
