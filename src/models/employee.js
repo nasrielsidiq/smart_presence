@@ -31,10 +31,51 @@ class Employee {
      * @param {number} [options.limit=10] - The number of records per page.
      * @returns {Promise<Object>} - An object containing the employee records, total records, total pages, and current page.
      */
-    static async findAll({ page = 1, limit = 10 }) {
+    static async findAll({ page = 1, limit = 10, division = null, office = null }) {
         const offset = (page - 1) * limit;
-        const [rows] = await pool.query('SELECT e.id, e.full_name, d.name as division_name, o.name as office_name, o.city as office_city, o.address as office_address, e.serial_id  FROM employees e INNER JOIN offices o ON e.office_id = o.id INNER JOIN divisions d ON e.division_id = d.id LIMIT ? OFFSET ?', [limit, offset]);
-        const [[{ total }]] = await pool.query('SELECT COUNT(*) AS total FROM employees');
+        let divisionFilter = '';
+        let officeFilter = '';
+        let filter = '';
+        if (division) {
+            divisionFilter = `d.id = ${division}`;
+        }
+
+        if (office) {
+            officeFilter = `o.id = ${office}`;
+        }
+
+        if(division && office) {
+            filter = `${divisionFilter} AND ${officeFilter}`;
+        }else if(division){
+            filter = divisionFilter;
+        }else if(office){
+            filter = officeFilter
+        }
+        
+        const [rows] = await pool.query(`
+            SELECT 
+                e.id, e.full_name, d.name AS division_name, 
+                o.name AS office_name, o.city AS office_city, 
+                o.address AS office_address, e.serial_id  
+            FROM employees e 
+            INNER JOIN offices o ON e.office_id = o.id 
+            INNER JOIN divisions d ON e.division_id = d.id 
+            ${filter ? 'WHERE ' : ''}
+            ${filter} 
+            LIMIT ? OFFSET ?
+        `, [limit, offset]);
+        const [[{total}]] = await pool.query(`
+            SELECT 
+                COUNT(*) AS total   
+            FROM employees e 
+            INNER JOIN offices o ON e.office_id = o.id 
+            INNER JOIN divisions d ON e.division_id = d.id 
+            ${filter ? 'WHERE ' : ''}
+            ${filter} 
+            LIMIT ? OFFSET ?
+        `, [limit, offset]);
+        
+        // const [[{ total }]] = await pool.query('SELECT COUNT(*) AS total FROM employees');
         return {
             employees: rows,
             total,

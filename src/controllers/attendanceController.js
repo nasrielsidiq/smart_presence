@@ -156,13 +156,14 @@ class AttendanceController {
             const page = parseInt(req.query.page, 10) || 1;
             const limit = parseInt(req.query.limit, 10) || 10;
             const period = req.query.period || 'daily';
+            const division = req.query.division || '';
+            const office = req.query.office || '';
             const spId = parseInt(req.user.id);
-            // console.log(spId);
             let attendances;
             if(req.user.privilege == 'supervisor'){
-                attendances = await Attendance.findAll({ page, limit, period, sp_id: spId });
+                attendances = await Attendance.findAll({ page, limit, period, division, office, sp_id: spId });
             }else{
-                attendances = await Attendance.findAll({ page, limit, period });
+                attendances = await Attendance.findAll({ page, limit, period, division, office });
             }
             res.json(attendances);
         } catch (error) {
@@ -235,6 +236,14 @@ class AttendanceController {
             }
             res.json({ message: 'Attendance record updated successfully' });
         } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    }
+    async individualReport(req, res){
+        try{
+            const attendance = await Attendance.IndividuAttendanceAllTest({});
+            res.json(attendance);
+        }catch(error){
             res.status(500).json({ error: error.message });
         }
     }

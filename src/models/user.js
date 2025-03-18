@@ -29,9 +29,24 @@ class User {
      * @param {number} options.id - The ID of the user making the request.
      * @returns {Promise<Object>} - An object containing the user records, total records, total pages, and current page.
      */
-    static async findAll({ page = 1, limit = 10, id }) {
+    static async findAll({ page = 1, limit = 10, id, division = null}) {
         const offset = (page - 1) * limit;
-        const [rows] = await pool.query('SELECT u.id, username, e.email, e.serial_id, privilage, image_profile, d.name AS division_name, u.created_at FROM users u INNER JOIN employees e ON u.serial_id = e.serial_id INNER JOIN divisions d ON e.division_id = d.id WHERE u.id != ? LIMIT ? OFFSET ?', [id, limit, offset]);
+        let divisionFilter = '';
+
+        if(division){
+            divisionFilter = `AND d.id = ${division}`;
+        }
+
+        const [rows] = await pool.query(`
+            SELECT u.id, username, e.email, e.serial_id, privilage, 
+            image_profile, d.name AS division_name, u.created_at 
+            FROM users u 
+            INNER JOIN employees e ON u.serial_id = e.serial_id 
+            INNER JOIN divisions d ON e.division_id = d.id 
+            WHERE u.id != ?
+            ${divisionFilter}
+            LIMIT ? OFFSET ?`
+            , [id, limit, offset]);
         const [[{ total }]] = await pool.query('SELECT COUNT(*) AS total FROM users u INNER JOIN employees e ON u.serial_id = e.serial_id INNER JOIN divisions d ON e.division_id = d.id WHERE u.id != ? LIMIT ? OFFSET ?', [id, limit, offset]);
         return {
             users: rows,

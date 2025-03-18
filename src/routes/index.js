@@ -136,6 +136,7 @@ function setRoutes(app) {
     // 🔹 Attendance routes
     router.post('/attendances', attendanceController.attendancebySerialid);
     router.get('/attendances', attendanceController.getAttendances);
+    router.get('/attendance/individual', attendanceController.individualReport);
     router.get('/attendances/rank', attendanceController.checkRankAttendance);
     router.get('/attendances/:id', attendanceController.getAttendancesIndividu);
     router.get('/attendance/:id', attendanceController.checkEmployeeAttendance);
@@ -145,10 +146,7 @@ function setRoutes(app) {
     router.get('/dashboard/chart', dashboardController.chart);
 
     // 🔹 Fake route for testing
-    router.post('/fakeRoute', (req, res) => {
-        res.send('Fake Route');
-    });
-
+    
     // 🔹 Role Middleware for Admin Only
     router.use(roleMiddleware(['admin']));
 

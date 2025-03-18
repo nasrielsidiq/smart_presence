@@ -37,7 +37,9 @@ class EmployeeController {
         try {
             const page = parseInt(req.query.page, 10) || 1;
             const limit = parseInt(req.query.limit, 10) || 10;
-            const employees = await Employee.findAll({ page, limit });
+            const division = req.query.division || '';
+            const office = req.query.office || '';
+            const employees = await Employee.findAll({ page, limit, division, office });
             res.json(employees);
         } catch (error) {
             res.status(500).json({ error: error.message });

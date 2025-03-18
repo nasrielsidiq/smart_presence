@@ -52,8 +52,9 @@ class UserController {
             const page = parseInt(req.query.page, 10) || 1;
             const limit = parseInt(req.query.limit, 10) || 10;
             const id = req.user.id;
+            const division = req.query.division || null;
     
-            const users = await User.findAll({ page, limit, id });
+            const users = await User.findAll({ page, limit, id, division });
     
             res.json(users);
         } catch (error) {
