@@ -17,6 +17,14 @@ class Division {
         return result.insertId;
     }
 
+    static async findByName(name){
+        const [result] = await pool.query(
+            'SELECT * FROM divisions WHERE name = ?',
+            [name]
+        );
+        return result[0];
+    }
+
     /**
      * Retrieve all divisions.
      * @returns {Promise<Array>} - An array of division records.

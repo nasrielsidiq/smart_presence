@@ -8,6 +8,16 @@ class DivisionController {
      */
     async createDivision(req, res) {
         try {
+
+            const division = await Division.findByName(req.body.name);
+            if(division) {
+                if(division.office_id == req.body.office_id){
+                    return res.status(403).json({ error : `Can't create same division at the same office` });
+                }
+            }
+
+            // console.log(division);
+
             const divisionId = await Division.create(req.body);
             res.status(201).json({ id: divisionId });
         } catch (error) {

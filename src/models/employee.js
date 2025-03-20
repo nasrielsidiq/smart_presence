@@ -75,7 +75,7 @@ class Employee {
             LIMIT ? OFFSET ?
         `, [limit, offset]);
         
-        // const [[{ total }]] = await pool.query('SELECT COUNT(*) AS total FROM employees');
+
         return {
             employees: rows,
             total,

@@ -5,6 +5,7 @@ const fs = require('fs');
 const Employee = require('../models/employee.js');
 const Division = require('../models/division.js');
 const Office = require('../models/office.js');
+const { error } = require('console');
 
 
 class UserController {
@@ -19,6 +20,11 @@ class UserController {
             const employee = await Employee.findBySerialId(req.body.serial_id);
             if (!employee) {
                 return res.status(404).json({ error: 'Employee serial_id not found' });
+            }
+
+            const user = await User.findBySerialId(req.body.serial_id);
+            if(user){
+                return res.status(403).json({ error: 'This employee has alreade have an account' });
             }
 
             const hashedPassword = await bcrypt.hash(req.body.password, 10);
