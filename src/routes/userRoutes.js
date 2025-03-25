@@ -25,7 +25,7 @@ router.get('/users', userController.getUsers);
  * @description Retrieve the profile image of a user by ID
  * @access Admin
  */
-router.get('/users/:id/image', userController.getImageProfileById);
+// router.get('/users/:id/image', userController.getImageProfileById);
 
 /**
  * @route GET /users/:id

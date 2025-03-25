@@ -4,9 +4,17 @@ const router = express.Router();
 const dashboardController = new DashboardController();
 
 /**
- * Dashboard routes
+ * @route GET /dashboard
+ * @description Retrieve dashboard data
+ * @access Admin
  */
 router.get('/dashboard', dashboardController.index);
+
+/**
+ * @route GET /dashboard/chart
+ * @description Retrieve dashboard chart data
+ * @access Admin
+ */
 router.get('/dashboard/chart', dashboardController.chart);
 
 module.exports = router;

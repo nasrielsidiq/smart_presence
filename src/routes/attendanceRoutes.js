@@ -22,7 +22,7 @@ router.get('/attendances', attendanceController.getAttendances);
  * @description Retrieve individual attendance report
  * @access Authenticated User
  */
-router.get('/attendance/individual', attendanceController.individualReport);
+router.get('/attendances/individual', attendanceController.individualReport);
 
 /**
  * @route GET /attendances/rank

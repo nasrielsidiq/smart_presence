@@ -318,7 +318,7 @@ class Attendance {
         const offset = (page - 1) * limit;
 
         const [rows] = await pool.query(`
-            SELECT e.id AS employee_id, e.full_name, a.check_in, a.status_check_in, d.name, o.name 
+            SELECT e.id AS employee_id, e.full_name, a.check_in, a.status_check_in, d.name as division_name, o.name 
             FROM employees e 
             INNER JOIN divisions d ON e.division_id = d.id
             INNER JOIN offices o ON e.office_id = o.id

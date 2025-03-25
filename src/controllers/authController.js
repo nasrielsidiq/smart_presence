@@ -26,7 +26,7 @@ class AuthController {
             // const privilage = user.privilage;
             const token = jwt.sign({ id: user.id, privilege: user.privilage, serial_id: user.serial_id }, 'your_jwt_secret', { expiresIn: '7d' });
         
-            res.json({ token, privilege: user.privilage });
+            res.json({ token });
         } catch (error) {
             res.status(500).json({ error: error.message });
         }
