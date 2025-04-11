@@ -4,13 +4,13 @@ const validateOffice = require('../validators/officeValidator');
 const { handleValidationErrors } = require('../middlewares/validationMiddleware');
 const router = express.Router();
 const officeController = new OfficeController();
-
+const upload = require('../middlewares/uploadMiddlewareOffice.js');
 /**
  * @route POST /offices
  * @description Create a new office
  * @access Admin
  */
-router.post('/offices', validateOffice, handleValidationErrors, officeController.createOffice);
+router.post('/offices', upload.single('img_office'), validateOffice, handleValidationErrors, officeController.createOffice);
 
 /**
  * @route GET /offices
@@ -31,7 +31,7 @@ router.get('/offices/:id', officeController.getOfficeById);
  * @description Update an office by ID
  * @access Admin
  */
-router.put('/offices/:id', validateOffice, handleValidationErrors, officeController.updateOffice);
+router.put('/offices/:id', upload.single('img_office'), validateOffice, handleValidationErrors, officeController.updateOffice);
 
 /**
  * @route DELETE /offices/:id

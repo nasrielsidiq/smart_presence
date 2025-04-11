@@ -10,10 +10,10 @@ class Office {
      * @returns {Promise<number>} - The ID of the created office.
      */
     static async create(office) {
-        const { name, city, address } = office;
+        const { name, city, address, img_office = null } = office;
         const [result] = await pool.query(
-            'INSERT INTO offices (name, city, address) VALUES (?, ?, ?)',
-            [name, city, address]
+            'INSERT INTO offices (name, city, address, img_office) VALUES (?, ?, ?, ?)',
+            [name, city, address, img_office]
         );
         return result.insertId;
     }
@@ -34,6 +34,11 @@ class Office {
         };
     }
 
+    static async getAll() {
+        const [rows] = await pool.query('SELECT * FROM offices'); 
+        return rows;
+    }
+
     /**
      * Find an office by ID.
      * @param {number} id - The ID of the office.
@@ -43,6 +48,8 @@ class Office {
         const [rows] = await pool.query('SELECT * FROM offices WHERE id = ?', [id]);
         return rows[0];
     }
+
+    
 
     /**
      * Update an office by ID.
@@ -55,10 +62,21 @@ class Office {
      */
     static async update(id, office) {
         try {
-            const { name, city, address } = office;
+            const { name, city, address, img_office } = office;
+
+            const [rows] = await pool.query('SELECT img_office FROM offices WHERE id = ?', [id]);
+            if (rows.length === 0) {
+                throw new Error('Office not found');
+            }
+
+            let newImage = rows[0].img_office;
+            if (img_office) {
+                newImage = img_office;
+            }
+
             const [update] = await pool.query(
-                'UPDATE offices SET name = ?, city = ?, address = ? WHERE id = ?',
-                [name, city, address, id]
+                'UPDATE offices SET name = ?, city = ?, address = ?, img_office = ? WHERE id = ?',
+                [name, city, address, newImage, id]
             );
 
             return update.affectedRows > 0;

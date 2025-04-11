@@ -1,6 +1,8 @@
 const Attendance = require('../models/attendance');
 const Employee = require('../models/employee');
+const Device = require('../models/device');
 const axios = require("axios");
+const { json } = require('body-parser');
 require("dotenv").config();
 
 class AttendanceController {
@@ -16,7 +18,7 @@ class AttendanceController {
      * @param {string} time - The time of the attendance.
      * @param {Object} res - The response object.
      */
-    async createOrUpdate(employee_id, time, res) {
+    async createOrUpdate(employee_id, time, device_code, res) {
         try {
             const employee = await Employee.findById(employee_id);
             if (!employee) {
@@ -24,27 +26,40 @@ class AttendanceController {
                     success: false,
                     message: 'Employee not found',
                     serial_id: null,
+                    device_code
                 }, res);
             }
     
             const exists = await Attendance.existsForDay(employee_id);
     
             if (exists) {
-                let success = await Attendance.create({ employee_id, time });
+
+                if(exists.device_code != device_code){
+                    return this.sendDataToAntares({
+                        success: false,
+                        message: 'Please logout from the same device',
+                        serial_id: employee.serial_id,
+                        device_code
+                    }, res);
+                }
+
+                let success = await Attendance.create({ employee_id, time, device_code });
     
                 return this.sendDataToAntares({
                     success: !!success,
                     message: success ? 'Attendance record updated successfully' : 'Failed to update attendance record',
                     serial_id: employee.serial_id,
+                    device_code
                 }, res);
             } else {
-                let id = await Attendance.create({ employee_id, time });
+                let id = await Attendance.create({ employee_id, time, device_code });
     
                 return this.sendDataToAntares({
                     success: true,
                     id,
                     message: 'Success to check in today',
                     serial_id: employee.serial_id,
+                    device_code
                 }, res);
             }
         } catch (error) {
@@ -63,14 +78,39 @@ class AttendanceController {
      * @param {string} time - The time of the attendance.
      * @param {Object} res - The response object.
      */
-    async attendancebySerialid(serial_id, time, res) {
+    async attendancebySerialid(serial_id, time, device_code, res) {
         try {
+
+            const device = await Device.findByCode(device_code);
+            if(!device) {
+                return this.sendDataToAntares({
+                    success: false,
+                    message: 'The device is not found',
+                    serial_id: null,
+                    device_code: device_code
+                }, res);
+            }
+
+            if(device.status == "inactive"){
+                return this.sendDataToAntares({
+                    success: false,
+                    message: 'The device is inactive',
+                    serial_id: null,
+                    device_code: device_code
+                }, res);
+            }
+
             const attendance = await Employee.findBySerialId(serial_id);
             if (!attendance) {
-                res.status(404).json({ error: 'Attendance record not found' });
+                return this.sendDataToAntares({
+                    success: false,
+                    message: 'Employee not found',
+                    serial_id: null,
+                    device_code
+                }, res);
             }
             console.log(attendance);
-            this.createOrUpdate(attendance.id, time, res);
+            this.createOrUpdate(attendance.id, time, device_code, res);
         } catch (error) {
             res.status(500).json({ error: error.message });
         }

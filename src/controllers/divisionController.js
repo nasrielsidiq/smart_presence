@@ -84,6 +84,13 @@ class DivisionController {
      */
     async deleteDivision(req, res) {
         try {
+
+            
+            const employees = await Division.findByDivisionId(req.params.id);
+            if (employees) {
+                return res.status(403).json({ error: 'Division has employees, cannot delete' });
+            }
+
             const success = await Division.delete(req.params.id);
             if (!success) {
                 res.status(404).json({ error: 'Division not found' });

@@ -38,8 +38,8 @@ class MonitorController {
     
             // Parse `con` content (as it is still in JSON string format)
             const content = JSON.parse(con);
-            attendanceController.attendancebySerialid(content.serial_id, content.time, res);
-            console.log("serial_id:", content.serial_id);
+            attendanceController.attendancebySerialid(content.serial_id, content.time, content.device_code, res);
+            // console.log("serial_id:", content.serial_id);
         } catch (error) {
             console.error("Error parsing data:", error);
             return res.status(500).json({ error: "Internal Server Error" });

@@ -1,5 +1,7 @@
 const Employee = require('../models/employee');
 const User = require('../models/user');
+const Office = require('../models/office');
+const Division = require('../models/division');
 
 class EmployeeController {
     /**
@@ -40,7 +42,9 @@ class EmployeeController {
             const division = req.query.division || '';
             const office = req.query.office || '';
             const employees = await Employee.findAll({ page, limit, division, office });
-            res.json(employees);
+            const offices = await Office.getAll();
+            const divisions = await Division.getAll();
+            res.json({offices, divisions, employees: employees.employees, total: employees.total, totalPages: employees.totalPages, currentPage: employees.currentPage});
         } catch (error) {
             res.status(500).json({ error: error.message });
         }

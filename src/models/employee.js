@@ -16,7 +16,9 @@ class Employee {
      * @returns {Promise<number>} - The ID of the created employee.
      */
     static async create(employee) {
-        const { serial_id, office_id, division_id, supervisor_id, full_name, position, email, no_hp, created_at } = employee;
+        const { serial_id, office_id, supervisor_id, full_name, position, email, no_hp, created_at } = employee;
+        const division_id = employee.division_id || null; // Set division_id to null if not provided
+        
         const [result] = await pool.query(
             'INSERT INTO employees (serial_id, office_id, division_id, supervisor_id, full_name, position, email, no_hp, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
             [serial_id, office_id, division_id, supervisor_id, full_name, position, email, no_hp, created_at]
@@ -59,7 +61,7 @@ class Employee {
                 o.address AS office_address, e.serial_id  
             FROM employees e 
             INNER JOIN offices o ON e.office_id = o.id 
-            INNER JOIN divisions d ON e.division_id = d.id 
+            LEFT JOIN divisions d ON e.division_id = d.id 
             ${filter ? 'WHERE ' : ''}
             ${filter} 
             LIMIT ? OFFSET ?
@@ -124,6 +126,11 @@ class Employee {
         return rows[0];
     }
 
+    static async findByDivisionId(division_id) {
+        const [rows] = await pool.query('SELECT * FROM employees WHERE division_id = ?', [division_id]);
+        return rows[0];
+    }
+
     /**
      * Update an employee by ID.
      * @param {number} id - The ID of the employee.
@@ -141,10 +148,25 @@ class Employee {
      */
     static async update(id, employee) {
         try {
-            const { serial_id, office_id, division_id, supervisor_id, full_name, position, email, no_hp, created_at } = employee;
+            const { supervisor_id, full_name, position, email, no_hp, created_at } = employee;
+            let serial_query = '';
+            let office_query = '';
+            let division_query = '';
+
+            if(employee.serial_id){
+                serial_query = `serial_id = ${serial_id},`;
+            }
+            if(employee.office_id){
+                office_query = `serial_id = ${office_id},`;
+            }
+            if(employee.division_id){
+                division_query = `serial_id = ${division_id},`;
+            }
+
+
             const [update] = await pool.query(
-                'UPDATE employees SET serial_id = ?, office_id = ?, division_id = ?, supervisor_id = ?, full_name = ?, position = ?, email = ?, no_hp = ?, created_at = ? WHERE id = ?',
-                [serial_id, office_id, division_id, supervisor_id, full_name, position, email, no_hp, created_at, id]
+                `UPDATE employees SET ${serial_query} ${office_query} ${division_query} supervisor_id = ?, full_name = ?, position = ?, email = ?, no_hp = ?, created_at = ? WHERE id = ?`,
+                [supervisor_id, full_name, position, email, no_hp, created_at, id]
             );
 
             return update.affectedRows > 0; 

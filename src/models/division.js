@@ -1,6 +1,6 @@
 const pool = require('../db.js');
 
-class Division {
+class   Division {
     /**
      * Create a new division.
      * @param {Object} division - The division data.
@@ -25,13 +25,29 @@ class Division {
         return result[0];
     }
 
+    static async findByOfficeId(office_id){
+        const [result] = await pool.query(
+            'SELECT * FROM divisions WHERE office_id = ?',
+            [office_id]
+        );
+        return result[0];
+    }
+
+    static async findByDivisionId(division_id){
+        const [result] = await pool.query(
+            'SELECT * FROM employees WHERE division_id = ?',
+            [division_id]
+        );
+        return result[0];
+    }
+
     /**
      * Retrieve all divisions.
      * @returns {Promise<Array>} - An array of division records.
      */
     static async findAll({ page = 1, limit = 10 }) {
         const offset = (page - 1) * limit;
-        const [rows] = await pool.query('SELECT * FROM divisions LIMIT ? OFFSET ?', [limit, offset]);
+        const [rows] = await pool.query('SELECT d.id, o.id as office_id, d.name, o.address, o.name AS office_name FROM divisions d INNER JOIN offices o ON d.office_id = o.id LIMIT ? OFFSET ?', [limit, offset]);
         const [[{ total }]] = await pool.query('SELECT COUNT(*) AS total FROM divisions');
         return {
             divisions: rows,
@@ -39,6 +55,11 @@ class Division {
             totalPages: Math.ceil(total / limit),
             currentPage: page
         }
+    }
+
+    static async getAll() {
+        const [rows] = await pool.query('SELECT * FROM divisions');
+        return rows;
     }
 
     /**

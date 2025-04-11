@@ -10,7 +10,7 @@ class Attendance {
      * @returns {Promise<number|boolean>} - The ID of the created record or a boolean indicating success for updates.
      */
     static async create(attendance) {
-        let { employee_id, time } = attendance;
+        let { employee_id, time, device_code } = attendance;
 
         const now = new Date(time.replace(' ', 'T'));
         const hours = now.getHours();
@@ -51,8 +51,8 @@ class Attendance {
         } else {
             // Create a new record
             const [result] = await pool.query(
-                'INSERT INTO attendance (employee_id, check_in, check_out, status_check_in, status_check_out, category) VALUES (?, ?, null, ?, null, null)',
-                [employee_id, time, status_check_in]
+                'INSERT INTO attendance (employee_id, device_code, check_in, check_out, status_check_in, status_check_out, category) VALUES (?, ?, ?, null, ?, null, null)',
+                [employee_id, device_code, time, status_check_in]
             );
             return result.insertId;
         }
@@ -263,10 +263,13 @@ class Attendance {
                             WHEN a.category = 'overtime' THEN 1
                             ELSE 0 
                         END
-                    ) AS total_score
+                    ) AS total_score,
+                    ds.current_streak AS current_streak 
                 FROM employees e
                 LEFT JOIN attendance a ON e.id = a.employee_id
+                LEFT JOIN discipline_streaks ds ON e.id = ds.employee_id
             `;
+            
     
             let params = [];
     
@@ -275,7 +278,7 @@ class Attendance {
                 params.push(spId);
             }
     
-            query += ` GROUP BY e.id, e.full_name ORDER BY total_score DESC, total_attendance DESC`;
+            query += ` GROUP BY e.id, e.full_name ORDER BY current_streak DESC, total_score DESC, total_attendance DESC`;
     
             const [rows] = await pool.query(query, params);
             console.log("Query Result:", rows); // Debugging

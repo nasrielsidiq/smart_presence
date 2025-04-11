@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const { format } = require('fast-csv');
 const helmet = require('helmet');
 var bodyParser = require('body-parser');
 const IndexController = require('../controllers/index.js');
@@ -13,7 +14,8 @@ const divisionRoutes = require('./divisionRoutes');
 const officeRoutes = require('./officeRoutes');
 const authRoutes = require('./authRoutes');
 const profileRoutes = require('./profileRoutes');
-const withoutMiddlewareRoutes = require('./withouMiddlewareRoute.js')
+const withoutMiddlewareRoutes = require('./withouMiddlewareRoute.js');
+const deviceRoutes = require('./deviceRoutes');
 
 
 
@@ -46,9 +48,7 @@ function setRoutes(app) {
     app.use(bodyParser.json());
     app.use(bodyParser.urlencoded({ extended: false }));
     app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-    
-    // Monitor routes (Tanpa Authentication)
-    router.post('/monitor', monitorController.postMonitor);
+
 
     // Auth routes (Tanpa Authentication)
     app.use('/api', authRoutes);
@@ -91,6 +91,8 @@ function setRoutes(app) {
 
     // Employee CRUD routes (Hanya Admin)
     app.use('/api', employeeRoutes);
+
+    app.use('/api', deviceRoutes);
 }
 
 

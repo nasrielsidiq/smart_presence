@@ -42,7 +42,7 @@ class User {
             image_profile, d.name AS division_name, u.created_at 
             FROM users u 
             INNER JOIN employees e ON u.serial_id = e.serial_id 
-            INNER JOIN divisions d ON e.division_id = d.id 
+            LEFT JOIN divisions d ON e.division_id = d.id 
             WHERE u.id != ?
             ${divisionFilter}
             LIMIT ? OFFSET ?`

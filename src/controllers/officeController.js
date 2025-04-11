@@ -1,4 +1,6 @@
 const Office = require('../models/office.js');
+const Division = require('../models/division.js');
+const path = require('path');
 
 class OfficeController {
     /**
@@ -8,6 +10,11 @@ class OfficeController {
      */
     async createOffice(req, res) {
         try {
+            if(req.file){
+                req.body.img_office = req.file.filename;
+            }else{
+                req.body.img_office = null;
+            }
             const officeId = await Office.create(req.body);
             res.status(201).json({ id: officeId });
         } catch (error) {
@@ -49,6 +56,24 @@ class OfficeController {
         }
     }
 
+    async getImageOfficeById(req, res) {
+        try {
+            const office = await Office.findById(req.params.id);
+            if (office) {
+                if(office.img_office){
+                    const uploadsDir = path.resolve(__dirname, '../uploads/offices');
+                    res.sendFile(path.join(uploadsDir, office.img_office));
+                }else{
+                    res.status(404).json({ error: 'Image not found' });
+                }
+            } else {
+                res.status(404).json({ error: 'Office not found' });
+            }
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    }
+
     /**
      * Update an office by ID.
      * @param {Object} req - The request object.
@@ -56,6 +81,13 @@ class OfficeController {
      */
     async updateOffice(req, res) {
         try {
+
+            if(req.file){
+                req.body.img_office = req.file.filename;
+            }else{
+                req.body.img_office = null;
+            }
+
             const status = await Office.update(req.params.id, req.body);
 
             if (!status) {
@@ -75,6 +107,19 @@ class OfficeController {
      */
     async deleteOffice(req, res) {
         try {
+
+            // Check if the office is associated with any divisions before deleting
+            const office = await Office.findById(req.params.id);
+            if (!office) {
+                res.status(404).json({ error: 'Office not found' });
+                return;
+            }
+            const divisions = await Division.findByOfficeId(req.params.id);
+            if (divisions) {
+                res.status(400).json({ error: 'Cannot delete office with associated divisions' });
+                return;
+            }
+
             const status = await Office.delete(req.params.id);
 
             if (!status) {
