@@ -15,18 +15,18 @@ class AuthController {
             console.log(user);
 
             if (!user) {
-                return res.status(404).json({ error: 'User not found' });
+                return res.status(404).json({ error: 'Wrong username or password' });
             }
             
             const isMatch = await bcrypt.compare(password, user.password);
             if (!isMatch) {
-                return res.status(400).json({ error: 'Invalid credentials' });
+                return res.status(400).json({ error: 'Wrong username or password' });
             }
 
             // const privilage = user.privilage;
             const token = jwt.sign({ id: user.id, privilege: user.privilage, serial_id: user.serial_id }, 'your_jwt_secret', { expiresIn: '7d' });
         
-            res.json({ token });
+            res.json({ token, user: { id: user.id, username: user.username, privilege: user.privilage, serial_id: user.serial_id } });
         } catch (error) {
             res.status(500).json({ error: error.message });
         }

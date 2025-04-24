@@ -28,10 +28,46 @@ class OnLeave {
      * @param {number} [options.limit=10] - The number of records per page.
      * @returns {Promise<Object>} - An object containing the leave records, total records, total pages, and current page.
      */
-    static async findAll({ page = 1, limit = 10 }) {
+    static async findAll({ page = 1, limit = 10, key = null, division = null, office = null }) {
         const offset = (page - 1) * limit;
-        const [rows] = await pool.query('SELECT * FROM on_leave LIMIT ? OFFSET ?', [limit, offset]);
-        const [[{ total }]] = await pool.query('SELECT COUNT(*) AS total FROM on_leave');
+        let keyFilter = '';
+        let divisionFilter = '';
+        let officeFilter = '';
+
+
+        const keyFilterParams = [];
+        if (key) {
+            keyFilter = `WHERE e.full_name LIKE ? OR ol.leave_type LIKE ?`;
+            const keyQuery = `%${key}%`;
+            keyFilterParams.push(keyQuery, keyQuery);
+        }
+
+        if (division) {
+            divisionFilter = `d.id = ${division}`;
+            keyFilter += ` ${key ? 'AND' : 'WHERE'} ${divisionFilter}`;
+        }
+
+        if (office) {
+            officeFilter = `o.id = ${office}`;
+            keyFilter += ` ${key || division ? 'AND' : 'WHERE'} ${officeFilter}`;
+        }
+
+        const [rows] = await pool.query(
+            `SELECT e.full_name, d.name as division_name, o.name as office_name, ol.reason, ol.start_date, ol.end_date, ol.leave_type
+            FROM on_leave ol 
+            INNER JOIN employees e ON ol.employee_id = e.id
+            INNER JOIN offices o ON e.office_id = o.id
+            LEFT JOIN divisions d ON e.division_id = d.id
+            ${keyFilter} ORDER BY ol.start_date DESC
+            LIMIT ? OFFSET ?`,
+            [...keyFilterParams ,limit, offset]
+        );
+        const [[{ total }]] = await pool.query(
+            `SELECT COUNT(*) AS total FROM on_leave ol
+            INNER JOIN employees e ON ol.employee_id = e.id
+            INNER JOIN offices o ON e.office_id = o.id
+            LEFT JOIN divisions d ON e.division_id = d.id
+             ${keyFilter}`, [...keyFilterParams]);
         return {
             leaves: rows,
             total,
@@ -50,6 +86,11 @@ class OnLeave {
         return rows[0];
     }
 
+    /**
+     * Check if a leave record exists for the current day for a specific employee.
+     * @param {number} employee_id - The ID of the employee.
+     * @returns {Promise<Object|null>} - The leave record if found, otherwise null.
+     */
     static async existsForDay(employee_id) {
         const [rows] = await pool.query(
             'SELECT * FROM on_leave WHERE employee_id = ? AND DATE(NOW()) BETWEEN DATE(start_date) AND DATE(end_date)',

@@ -1,5 +1,6 @@
 const attendance = require('../models/attendance.js');
 const employee = require('../models/employee.js');
+const division = require('../models/division.js');
 
 class DashboardController {
     /**
@@ -9,11 +10,19 @@ class DashboardController {
      */
     async index(req, res) {
         try {
-            const employeeCount = await employee.totalEmployee();
-            const absentCount = await attendance.totalAbsent();
-            const onTimeCount = await attendance.totalOnTime();
-            const lateCount = await attendance.totalLate();
-            const onLeaveCount = await employee.totalOnLeave();
+
+            const division_id = req.query.division || null;
+
+            if(division_id) {
+                const divisions = await division.findById(division_id);
+                if (!divisions) return res.status(404).json({ message: 'Division not found' });
+            }
+
+            const employeeCount = await employee.totalEmployee(division_id);
+            const absentCount = await attendance.totalAbsent(division_id);
+            const onTimeCount = await attendance.totalOnTime(division_id);
+            const lateCount = await attendance.totalLate(division_id);
+            const onLeaveCount = await attendance.totalOnLeave(division_id);
     
             // Menghitung total kehadiran
             const totalPresence = onTimeCount + lateCount;
@@ -58,17 +67,11 @@ class DashboardController {
 
     async chart(req, res) {
         try{
-            const attendances = await attendance.grafikPerBulan();
-            // const data = [];
-            // const labels = [];
-            // attendances.forEach((item) => {
-            //     data.push(item.total);
-            //     labels.push(item.date);
-            // });
-            // res.json({
-            //     data,
-            //     labels
-            // });
+
+            const category = req.query.category || 'discipline';
+            // console.log(category);
+
+            const attendances = await attendance.grafikPerBulan(category);
             res.json(attendances);
         }catch(error){
             res.status(500).json({ error: error.message });

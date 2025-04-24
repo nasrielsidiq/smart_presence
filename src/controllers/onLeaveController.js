@@ -32,7 +32,12 @@ class OnLeaveController {
         try {
             const page = parseInt(req.query.page, 10) || 1;
             const limit = parseInt(req.query.limit, 10) || 10;
-            const leaves = await OnLeave.findAll({ page, limit });
+            const key = req.query.key || null;
+            const office = req.query.office || null;
+            const division = req.query.division || null;
+
+
+            const leaves = await OnLeave.findAll({ page, limit, key, office, division });
             res.json(leaves);
         } catch (error) {
             res.status(500).json({ error: error.message });

@@ -21,13 +21,6 @@ router.post('/users', upload.single('image_profile'), validateUser, handleValida
 router.get('/users', userController.getUsers);
 
 /**
- * @route GET /users/:id/image
- * @description Retrieve the profile image of a user by ID
- * @access Admin
- */
-// router.get('/users/:id/image', userController.getImageProfileById);
-
-/**
  * @route GET /users/:id
  * @description Retrieve a user by ID
  * @access Admin
@@ -41,6 +34,7 @@ router.get('/users/:id', userController.getUserById);
  */
 router.put('/users/:id', upload.single('image_profile'), validateUser, handleValidationErrorsUser, userController.updateUser);
 
+router.put('/users/:id/image', upload.single('image_profile'), userController.updateImageProfile);
 /**
  * @route DELETE /users/:id
  * @description Delete a user by ID

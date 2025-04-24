@@ -24,9 +24,25 @@ class Device {
      * Retrieve all devices.
      * @returns {Promise<Array>} - An array of device records.
      */
-    static async findAll() {
-        const [rows] = await pool.query('SELECT * FROM devices');
-        return rows;
+    static async findAll({ limit = 10, page = 1, key = null }) {
+        const offset = (page - 1) * limit;
+        let keyFilter = '';
+        const keyFilterParams = [];
+        if (key) {
+            keyFilter = `WHERE device_code LIKE ? OR device_name LIKE ?`;
+            const keyQuery = `%${key}%`;
+            keyFilterParams.push(keyQuery, keyQuery);
+        }
+
+        
+        const [rows] = await pool.query(`SELECT * FROM devices ${keyFilter} LIMIT ? OFFSET ?`, [...keyFilterParams ,limit, offset]);
+        const [[{ total }]] = await pool.query(`SELECT COUNT(*) AS total FROM devices ${keyFilter}`, keyFilterParams);
+        return {
+            devices: rows,
+            total,
+            totalPages: Math.ceil(total / limit),
+            currentPage: page
+        }
     }
 
     /**

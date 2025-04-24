@@ -1,6 +1,7 @@
 const Office = require('../models/office.js');
 const Division = require('../models/division.js');
 const path = require('path');
+const fs = require('fs');
 
 class OfficeController {
     /**
@@ -31,7 +32,8 @@ class OfficeController {
         try {
             const page = parseInt(req.query.page, 10) || 1;
             const limit = parseInt(req.query.limit, 10) || 10;
-            const offices = await Office.findAll({ page, limit });
+            const key = req.query.key || null;
+            const offices = await Office.findAll({ page, limit, key });
             res.json(offices);
         } catch (error) {
             res.status(500).json({ error: error.message });
@@ -118,6 +120,14 @@ class OfficeController {
             if (divisions) {
                 res.status(400).json({ error: 'Cannot delete office with associated divisions' });
                 return;
+            }
+
+            if(office.img_office){
+                const uploadsDir = path.resolve(__dirname, '../uploads/offices');
+                const filePath = path.join(uploadsDir, office.img_office);
+                if (fs.existsSync(filePath)) {
+                    fs.unlinkSync(filePath); // Delete the file from the server
+                }
             }
 
             const status = await Office.delete(req.params.id);

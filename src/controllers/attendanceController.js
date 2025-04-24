@@ -199,11 +199,13 @@ class AttendanceController {
             const division = req.query.division || '';
             const office = req.query.office || '';
             const spId = parseInt(req.user.id);
+            const key = req.query.key || null;
+            const category = req.query.category || null;
             let attendances;
             if(req.user.privilege == 'supervisor'){
-                attendances = await Attendance.findAll({ page, limit, period, division, office, sp_id: spId });
+                attendances = await Attendance.findAll({ page, limit, period, division, office, sp_id: spId, key, category });
             }else{
-                attendances = await Attendance.findAll({ page, limit, period, division, office });
+                attendances = await Attendance.findAll({ page, limit, period, division, office, key, category });
             }
             res.json(attendances);
         } catch (error) {
@@ -281,7 +283,16 @@ class AttendanceController {
     }
     async individualReport(req, res){
         try{
-            const attendance = await Attendance.IndividuAttendanceAllTest({});
+
+            const page = parseInt(req.query.page, 10) || 1;
+            const limit = parseInt(req.query.limit, 10) || 10;
+            const office = req.query.office || null;
+            const division = req.query.division || null;
+            const key = req.query.key || null;
+            const category = req.query.category || null;
+
+            const attendance = await Attendance.IndividuAttendanceAllTest({page, limit, category, office, division, key});
+            console.log(attendance);
             res.json(attendance);
         }catch(error){
             res.status(500).json({ error: error.message });

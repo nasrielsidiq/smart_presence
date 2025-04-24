@@ -41,7 +41,8 @@ class EmployeeController {
             const limit = parseInt(req.query.limit, 10) || 10;
             const division = req.query.division || '';
             const office = req.query.office || '';
-            const employees = await Employee.findAll({ page, limit, division, office });
+            const key = req.query.key || null;
+            const employees = await Employee.findAll({ page, limit, division, office, key });
             const offices = await Office.getAll();
             const divisions = await Division.getAll();
             res.json({offices, divisions, employees: employees.employees, total: employees.total, totalPages: employees.totalPages, currentPage: employees.currentPage});
@@ -86,6 +87,14 @@ class EmployeeController {
                     return res.status(400).json({ error: 'Supervisor must have privilage supervisor' });
                 }
             }
+
+            if(req.body.office_id){
+                const office = await Office.findById(req.body.office_id);
+                if (!office) {
+                    return res.status(404).json({ error: 'Office not found' });
+                }
+            }
+
             const success = await Employee.update(req.params.id, req.body);
 
             if (!success) {

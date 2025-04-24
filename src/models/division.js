@@ -45,9 +45,19 @@ class   Division {
      * Retrieve all divisions.
      * @returns {Promise<Array>} - An array of division records.
      */
-    static async findAll({ page = 1, limit = 10 }) {
+    static async findAll({ page = 1, limit = 10, key = null }) {
         const offset = (page - 1) * limit;
-        const [rows] = await pool.query('SELECT d.id, o.id as office_id, d.name, o.address, o.name AS office_name FROM divisions d INNER JOIN offices o ON d.office_id = o.id LIMIT ? OFFSET ?', [limit, offset]);
+        let keyFilter = '';
+        const keyFilterParams = [];
+
+        if (key) {
+            keyFilter = `WHERE d.name LIKE ? OR o.name LIKE ?`;
+            const keyQuery = `%${key}%`;
+            keyFilterParams.push(keyQuery, keyQuery);
+        }
+
+
+        const [rows] = await pool.query(`SELECT d.id, o.id as office_id, d.name, o.address, o.name AS office_name FROM divisions d INNER JOIN offices o ON d.office_id = o.id ${keyFilter} LIMIT ? OFFSET ?`, [...keyFilterParams   , limit, offset]);
         const [[{ total }]] = await pool.query('SELECT COUNT(*) AS total FROM divisions');
         return {
             divisions: rows,

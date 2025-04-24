@@ -22,10 +22,18 @@ class Office {
      * Retrieve all offices.
      * @returns {Promise<Array>} - An array of office records.
      */
-    static async findAll({ page = 1, limit = 10 }) {
+    static async findAll({ page = 1, limit = 10, key = null }) {
         const offset = (page - 1) * limit;
-        const [rows] = await pool.query('SELECT * FROM offices LIMIT ? OFFSET ?', [limit, offset]); 
-        const [[{ total }]] = await pool.query('SELECT COUNT(*) AS total FROM offices');
+        let keyFilter = '';
+        const keyFilterParams = [];
+        if (key) {
+            keyFilter = `WHERE name LIKE ? OR city LIKE ? OR address LIKE ?`;
+            const keyQuery = `%${key}%`;
+            keyFilterParams.push(keyQuery, keyQuery, keyQuery);
+        }
+
+        const [rows] = await pool.query(`SELECT * FROM offices ${keyFilter} LIMIT ? OFFSET ?`, [...keyFilterParams ,limit, offset]); 
+        const [[{ total }]] = await pool.query(`SELECT COUNT(*) AS total FROM offices`, [...keyFilterParams]);
         return {
             offices: rows,
             total,

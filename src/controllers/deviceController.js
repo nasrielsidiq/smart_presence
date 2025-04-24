@@ -8,6 +8,13 @@ class DeviceController {
      */
     async createDevice(req, res) {
         try {
+
+            const device = await Device.findByCode(req.body.device_code);
+            if (device) {
+                res.status(400).json({ error: 'Device already exists' });
+                return;
+            }
+
             const deviceId = await Device.create(req.body);
             res.status(201).json({ id: deviceId });
         } catch (error) {
@@ -22,7 +29,10 @@ class DeviceController {
      */
     async getDevices(req, res) {
         try {
-            const devices = await Device.findAll();
+            const page = parseInt(req.query.page) || 1;
+            const limit = parseInt(req.query.limit) || 10;
+            const key = req.query.key || null;
+            const devices = await Device.findAll({page, limit, key});
             res.json(devices);
         } catch (error) {
             res.status(500).json({ error: error.message });

@@ -6,7 +6,7 @@ class Employee {
      * @param {Object} employee - The employee data.
      * @param {string} employee.serial_id - The serial ID of the employee.
      * @param {number} employee.office_id - The office ID of the employee.
-     * @param {number} employee.division_id - The division ID of the employee.
+     * @param {number} [employee.division_id=null] - The division ID of the employee (optional).
      * @param {number} employee.supervisor_id - The supervisor ID of the employee.
      * @param {string} employee.full_name - The full name of the employee.
      * @param {string} employee.position - The position of the employee.
@@ -31,29 +31,36 @@ class Employee {
      * @param {Object} options - The options for retrieving employees.
      * @param {number} [options.page=1] - The page number.
      * @param {number} [options.limit=10] - The number of records per page.
+     * @param {number} [options.division=null] - The division ID for filtering employees (optional).
+     * @param {number} [options.office=null] - The office ID for filtering employees (optional).
      * @returns {Promise<Object>} - An object containing the employee records, total records, total pages, and current page.
      */
-    static async findAll({ page = 1, limit = 10, division = null, office = null }) {
+    static async findAll({ page = 1, limit = 10, division = null, office = null, key = null } = {}) {
         const offset = (page - 1) * limit;
-        let divisionFilter = '';
-        let officeFilter = '';
-        let filter = '';
+        const keyFilterParams = [];
+        const conditions = [];
+    
+        // Filter division
         if (division) {
-            divisionFilter = `d.id = ${division}`;
+            conditions.push(`d.id = ${division}`);
         }
-
+    
+        // Filter office
         if (office) {
-            officeFilter = `o.id = ${office}`;
+            conditions.push(`o.id = ${office}`);
         }
-
-        if(division && office) {
-            filter = `${divisionFilter} AND ${officeFilter}`;
-        }else if(division){
-            filter = divisionFilter;
-        }else if(office){
-            filter = officeFilter
+    
+        // Filter key
+        if (key) {
+            conditions.push(`(e.full_name LIKE ? OR o.name LIKE ?)`);
+            const keyQuery = `%${key}%`;
+            keyFilterParams.push(keyQuery, keyQuery);
         }
-        
+    
+        // Bangun WHERE clause
+        const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+    
+        // Query data
         const [rows] = await pool.query(`
             SELECT 
                 e.id, e.full_name, d.name AS division_name, 
@@ -62,22 +69,19 @@ class Employee {
             FROM employees e 
             INNER JOIN offices o ON e.office_id = o.id 
             LEFT JOIN divisions d ON e.division_id = d.id 
-            ${filter ? 'WHERE ' : ''}
-            ${filter} 
+            ${whereClause}
             LIMIT ? OFFSET ?
-        `, [limit, offset]);
-        const [[{total}]] = await pool.query(`
-            SELECT 
-                COUNT(*) AS total   
+        `, [...keyFilterParams, limit, offset]);
+    
+        // Query total
+        const [[{ total }]] = await pool.query(`
+            SELECT COUNT(*) AS total
             FROM employees e 
             INNER JOIN offices o ON e.office_id = o.id 
-            INNER JOIN divisions d ON e.division_id = d.id 
-            ${filter ? 'WHERE ' : ''}
-            ${filter} 
-            LIMIT ? OFFSET ?
-        `, [limit, offset]);
-        
-
+            LEFT JOIN divisions d ON e.division_id = d.id 
+            ${whereClause}
+        `, keyFilterParams);
+    
         return {
             employees: rows,
             total,
@@ -85,19 +89,26 @@ class Employee {
             currentPage: page
         };
     }
+    
 
     /**
      * Retrieve all employees under a specific supervisor.
      * @param {Object} options - The options for retrieving employees.
      * @param {number} [options.page=1] - The page number.
      * @param {number} [options.limit=10] - The number of records per page.
+     * @param {number} supervisor_id - The ID of the supervisor.
      * @returns {Promise<Object>} - An object containing the employee records, total records, total pages, and current page.
      */
-    static async svFindAll({ page = 1, limit = 10 }) {
+    static async svFindAll({ page = 1, limit = 10, supervisor_id }) {
         const offset = (page - 1) * limit;
-        const supervisor_id = req.user.id;
-        const [rows] = await pool.query('SELECT * FROM employees WHERE supervisor_id = ? LIMIT ? OFFSET ?', [supervisor_id, limit, offset]);
-        const [[{ total }]] = await pool.query('SELECT COUNT(*) AS total FROM employees');
+        const [rows] = await pool.query(
+            'SELECT * FROM employees WHERE supervisor_id = ? LIMIT ? OFFSET ?',
+            [supervisor_id, limit, offset]
+        );
+        const [[{ total }]] = await pool.query(
+            'SELECT COUNT(*) AS total FROM employees WHERE supervisor_id = ?',
+            [supervisor_id]
+        );
         return {
             employees: rows,
             total,
@@ -126,18 +137,23 @@ class Employee {
         return rows[0];
     }
 
+    /**
+     * Find employees by division ID.
+     * @param {number} division_id - The division ID.
+     * @returns {Promise<Array>} - An array of employee records.
+     */
     static async findByDivisionId(division_id) {
         const [rows] = await pool.query('SELECT * FROM employees WHERE division_id = ?', [division_id]);
-        return rows[0];
+        return rows;
     }
 
     /**
      * Update an employee by ID.
      * @param {number} id - The ID of the employee.
      * @param {Object} employee - The updated employee data.
-     * @param {string} employee.serial_id - The serial ID of the employee.
-     * @param {number} employee.office_id - The office ID of the employee.
-     * @param {number} employee.division_id - The division ID of the employee.
+     * @param {string} [employee.serial_id] - The serial ID of the employee (optional).
+     * @param {number} [employee.office_id] - The office ID of the employee (optional).
+     * @param {number} [employee.division_id] - The division ID of the employee (optional).
      * @param {number} employee.supervisor_id - The supervisor ID of the employee.
      * @param {string} employee.full_name - The full name of the employee.
      * @param {string} employee.position - The position of the employee.
@@ -153,23 +169,22 @@ class Employee {
             let office_query = '';
             let division_query = '';
 
-            if(employee.serial_id){
-                serial_query = `serial_id = ${serial_id},`;
+            if (employee.serial_id) {
+                serial_query = `serial_id = "${employee.serial_id}",`;
             }
-            if(employee.office_id){
-                office_query = `serial_id = ${office_id},`;
+            if (employee.office_id) {
+                office_query = `office_id = ${employee.office_id},`;
             }
-            if(employee.division_id){
-                division_query = `serial_id = ${division_id},`;
+            if (employee.division_id) {
+                division_query = `division_id = ${employee.division_id},`;
             }
-
 
             const [update] = await pool.query(
                 `UPDATE employees SET ${serial_query} ${office_query} ${division_query} supervisor_id = ?, full_name = ?, position = ?, email = ?, no_hp = ?, created_at = ? WHERE id = ?`,
                 [supervisor_id, full_name, position, email, no_hp, created_at, id]
             );
 
-            return update.affectedRows > 0; 
+            return update.affectedRows > 0;
         } catch (error) {
             console.error('Error updating employee:', error);
             throw new Error('Failed to update employee');
@@ -191,7 +206,7 @@ class Employee {
                 [is_active, id]
             );
 
-            return update.affectedRows > 0; 
+            return update.affectedRows > 0;
         } catch (error) {
             console.error('Error updating employee:', error);
             throw new Error('Failed to update employee');
@@ -217,8 +232,11 @@ class Employee {
      * Get the total number of employees.
      * @returns {Promise<number>} - The total number of employees.
      */
-    static async totalEmployee() {
+    static async totalEmployee(division_id = null) {
         const [rows] = await pool.query('SELECT COUNT(*) as total FROM employees');
+        if(division_id) {
+            const [rows] = await pool.query('SELECT COUNT(*) as total FROM employees WHERE division_id = ?', [division_id]);
+        }
         return rows[0].total;
     }
 

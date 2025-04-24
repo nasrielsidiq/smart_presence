@@ -59,8 +59,9 @@ class UserController {
             const limit = parseInt(req.query.limit, 10) || 10;
             const id = req.user.id;
             const division = req.query.division || null;
+            const key = req.query.key || null;
     
-            const users = await User.findAll({ page, limit, id, division });
+            const users = await User.findAll({ page, limit, id, division, key });
     
             res.json(users);
         } catch (error) {
@@ -177,6 +178,38 @@ class UserController {
         }
     }
 
+    async updateImageProfile(req, res) {
+        try {
+            const user = await User.findById(req.params.id);
+            if (!user) {
+                res.status(404).json({ error: 'User not found' });
+                return;
+            }
+
+            if(user.image_profile){
+                const uploadsDir = path.resolve(__dirname, '../uploads/users');
+                const imageDir = path.join(uploadsDir, user.image_profile);
+
+                // 2️⃣ Hapus file dari sistem jika ada
+                if (fs.existsSync(imageDir)) {
+                    fs.unlinkSync(imageDir);
+                }
+            }
+
+            if (req.file) {
+                req.body.image_profile = req.file.filename;
+            } else {
+                req.body.image_profile = null;
+            }
+            
+            const status = await User.updateImage(req.params.id, req.body.image_profile);
+
+            res.json({ message: 'User updated successfully' });
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    }
+
     /**
      * Delete a user by ID.
      * @param {Object} req - The request object.
@@ -196,12 +229,14 @@ class UserController {
                 return;
             }
 
-            const uploadsDir = path.resolve(__dirname, '../uploads/users');
-            const imageDir = path.join(uploadsDir, user.image_profile);
-
-            // 2️⃣ Hapus file dari sistem jika ada
-            if (fs.existsSync(imageDir)) {
-                fs.unlinkSync(imageDir);
+            if(user.image_profile){
+                const uploadsDir = path.resolve(__dirname, '../uploads/users');
+                const imageDir = path.join(uploadsDir, user.image_profile);
+    
+                // 2️⃣ Hapus file dari sistem jika ada
+                if (fs.existsSync(imageDir)) {
+                    fs.unlinkSync(imageDir);
+                }
             }
 
             const status = await User.delete(req.params.id);
