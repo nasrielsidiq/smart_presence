@@ -17,4 +17,6 @@ router.get('/dashboard', dashboardController.index);
  */
 router.get('/dashboard/chart', dashboardController.chart);
 
+router.get('/dashboard/persentages', dashboardController.persentages);
+
 module.exports = router;

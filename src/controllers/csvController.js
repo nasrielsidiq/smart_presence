@@ -29,7 +29,7 @@ class csvController {
         console.log(employee_id);
         if(!employee) return res.status(404).json({message : 'Employee not found'});
         
-        const data = await Attendance.IndividuAttendanceAll({employee_id : employee_id, limit : "null", period : period, page : "null"});
+        const data = await Attendance.IndividuAttendanceAll({employee_id : employee_id, limit : 10000000000, period : period});
         if(!data) return res.status(404).json({message : 'Data not found'});        
     
         // Set header supaya browser tahu ini file CSV

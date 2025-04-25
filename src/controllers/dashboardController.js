@@ -24,6 +24,34 @@ class DashboardController {
             const lateCount = await attendance.totalLate(division_id);
             const onLeaveCount = await attendance.totalOnLeave(division_id);
     
+            res.json({
+                employeeCount,
+                absentCount,
+                onTimeCount,
+                lateCount,
+                onLeaveCount,
+            });
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    }
+
+    async persentages(req, res) {
+        try {
+
+            const division_id = req.query.division || null;
+
+            if(division_id) {
+                const divisions = await division.findById(division_id);
+                if (!divisions) return res.status(404).json({ message: 'Division not found' });
+            }
+
+            const employeeCount = await employee.totalEmployee(division_id);
+            const absentCount = await attendance.totalAbsent(division_id);
+            const onTimeCount = await attendance.totalOnTime(division_id);
+            const lateCount = await attendance.totalLate(division_id);
+            const onLeaveCount = await attendance.totalOnLeave(division_id);
+    
             // Menghitung total kehadiran
             const totalPresence = onTimeCount + lateCount;
             const totalSum = absentCount + totalPresence + onLeaveCount; // Total semua kategori
@@ -48,11 +76,6 @@ class DashboardController {
             }
     
             res.json({
-                employeeCount,
-                absentCount,
-                onTimeCount,
-                lateCount,
-                onLeaveCount,
                 percentages: {
                     absent: absentPercentage.toFixed(2),
                     onTime: onTimePercentage.toFixed(2),

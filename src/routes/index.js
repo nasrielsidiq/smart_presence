@@ -16,6 +16,8 @@ const authRoutes = require('./authRoutes');
 const profileRoutes = require('./profileRoutes');
 const withoutMiddlewareRoutes = require('./withouMiddlewareRoute.js');
 const deviceRoutes = require('./deviceRoutes');
+const unknownSerialIdRoutes = require('./unknownSerialIdRoutes.js');
+
 const CsvController = require('../controllers/csvController');
 const UserController = require('../controllers/userController');
 const OfficeController = require('../controllers/officeController.js');
@@ -140,6 +142,8 @@ function setRoutes(app) {
      * Routes for managing device records.
      */
     app.use('/api', deviceRoutes);
+
+    app.use('/api', unknownSerialIdRoutes);
     
     /**
      * @route POST /monitor

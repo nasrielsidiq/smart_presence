@@ -35,7 +35,8 @@ class DivisionController {
             const page = parseInt(req.query.page, 10) || 1;
             const limit = parseInt(req.query.limit, 10) || 10;
             const key = req.query.key || null;
-            const divisions = await Division.findAll({ page, limit, key });
+            const office = req.query.office || null;
+            const divisions = await Division.findAll({ page, limit, office, key });
             res.json(divisions);
         } catch (error) {
             res.status(500).json({ error: error.message });

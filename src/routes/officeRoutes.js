@@ -5,6 +5,7 @@ const { handleValidationErrors } = require('../middlewares/validationMiddleware'
 const router = express.Router();
 const officeController = new OfficeController();
 const upload = require('../middlewares/uploadMiddlewareOffice.js');
+const { route } = require('./employeeRoutes.js');
 /**
  * @route POST /offices
  * @description Create a new office
@@ -18,6 +19,8 @@ router.post('/offices', upload.single('img_office'), validateOffice, handleValid
  * @access Admin
  */
 router.get('/offices', officeController.getOffices);
+
+router.get('/offices/cities', officeController.cities);
 
 /**
  * @route GET /offices/:id

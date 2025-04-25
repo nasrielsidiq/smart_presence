@@ -60,8 +60,9 @@ class UserController {
             const id = req.user.id;
             const division = req.query.division || null;
             const key = req.query.key || null;
+            const privilage = req.query.privilage || null;
     
-            const users = await User.findAll({ page, limit, id, division, key });
+            const users = await User.findAll({ page, limit, id, division, privilage, key });
     
             res.json(users);
         } catch (error) {

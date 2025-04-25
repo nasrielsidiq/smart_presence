@@ -45,15 +45,22 @@ class   Division {
      * Retrieve all divisions.
      * @returns {Promise<Array>} - An array of division records.
      */
-    static async findAll({ page = 1, limit = 10, key = null }) {
+    static async findAll({ page = 1, limit = 10, key = null, office = null }) {
         const offset = (page - 1) * limit;
         let keyFilter = '';
+        let officeFilter = '';  
         const keyFilterParams = [];
 
         if (key) {
-            keyFilter = `WHERE d.name LIKE ? OR o.name LIKE ?`;
+            keyFilter += `WHERE d.name LIKE ? OR o.name LIKE ?`;
             const keyQuery = `%${key}%`;
             keyFilterParams.push(keyQuery, keyQuery);
+        }
+
+        if (office) {
+            officeFilter += `o.id = ?`;
+            keyFilter += ` ${key ? 'AND' : 'WHERE'} ${officeFilter}`;
+            keyFilterParams.push(office);
         }
 
 

@@ -33,10 +33,20 @@ class OfficeController {
             const page = parseInt(req.query.page, 10) || 1;
             const limit = parseInt(req.query.limit, 10) || 10;
             const key = req.query.key || null;
-            const offices = await Office.findAll({ page, limit, key });
+            const city = req.query.city || null;
+            const offices = await Office.findAll({ page, limit, city, key });
             res.json(offices);
         } catch (error) {
             res.status(500).json({ error: error.message });
+        }
+    }
+
+    async cities(req, res) {
+        try {
+            const cities = await Office.getUniqueCities();
+            res.json(cities);
+        } catch (error) {
+            console.error('Error fetching unique cities:', error);
         }
     }
 

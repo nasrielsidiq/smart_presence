@@ -30,10 +30,11 @@ class User {
      * @param {number} [options.division=null] - The division ID for filtering users.
      * @returns {Promise<Object>} - An object containing the user records, total records, total pages, and current page.
      */
-    static async findAll({ page = 1, limit = 10, id, division = null, key = null }) {
+    static async findAll({ page = 1, limit = 10, id, division = null, privilage = null, key = null }) {
         const offset = (page - 1) * limit;
         let divisionFilter = '';
         let keyFilter = '';
+        let privilageFilter = '';
         const keyFilterParams = [];
 
         if (key) {
@@ -46,6 +47,10 @@ class User {
             divisionFilter = `AND d.id = ${division}`;
         }
 
+        if( privilage) {   
+            privilageFilter = `AND u.privilage = '${privilage}'`;
+        }
+
         const [rows] = await pool.query(`
             SELECT u.id, username, e.email, e.serial_id, privilage, 
             image_profile, d.name AS division_name, u.created_at 
@@ -54,6 +59,7 @@ class User {
             LEFT JOIN divisions d ON e.division_id = d.id 
             WHERE u.id != ?
             ${divisionFilter}
+            ${privilageFilter}
             ${keyFilter}
             LIMIT ? OFFSET ?`,
             [id, ...keyFilterParams, limit, offset]
@@ -64,7 +70,7 @@ class User {
             FROM users u 
             INNER JOIN employees e ON u.serial_id = e.serial_id 
             LEFT JOIN divisions d ON e.division_id = d.id 
-            WHERE u.id != ? ${divisionFilter} ${keyFilter}`,
+            WHERE u.id != ? ${divisionFilter} ${privilageFilter} ${keyFilter}`,
             [id, ...keyFilterParams]
         );
 

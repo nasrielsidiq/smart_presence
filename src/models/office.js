@@ -22,7 +22,7 @@ class Office {
      * Retrieve all offices.
      * @returns {Promise<Array>} - An array of office records.
      */
-    static async findAll({ page = 1, limit = 10, key = null }) {
+    static async findAll({ page = 1, limit = 10, key = null, city = null }) {
         const offset = (page - 1) * limit;
         let keyFilter = '';
         const keyFilterParams = [];
@@ -30,6 +30,11 @@ class Office {
             keyFilter = `WHERE name LIKE ? OR city LIKE ? OR address LIKE ?`;
             const keyQuery = `%${key}%`;
             keyFilterParams.push(keyQuery, keyQuery, keyQuery);
+        }
+
+        if (city) {   
+            keyFilter += ` ${key ? 'AND' : 'WHERE'} city = ?`;
+            keyFilterParams.push(city);
         }
 
         const [rows] = await pool.query(`SELECT * FROM offices ${keyFilter} LIMIT ? OFFSET ?`, [...keyFilterParams ,limit, offset]); 
@@ -47,6 +52,10 @@ class Office {
         return rows;
     }
 
+    static async getUniqueCities() {
+        const [rows] = await pool.query('SELECT DISTINCT city FROM offices');
+        return rows.map(row => row.city);
+    }
     /**
      * Find an office by ID.
      * @param {number} id - The ID of the office.

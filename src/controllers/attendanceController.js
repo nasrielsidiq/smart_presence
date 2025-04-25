@@ -1,6 +1,7 @@
 const Attendance = require('../models/attendance');
 const Employee = require('../models/employee');
 const Device = require('../models/device');
+const unknownSerialId = require('../models/unknownSerialId');
 const axios = require("axios");
 const { json } = require('body-parser');
 require("dotenv").config();
@@ -47,7 +48,7 @@ class AttendanceController {
     
                 return this.sendDataToAntares({
                     success: !!success,
-                    message: success ? 'Attendance record updated successfully' : 'Failed to update attendance record',
+                    message: success ? 'Success to check out' : 'Failed to check out today',
                     serial_id: employee.serial_id,
                     device_code
                 }, res);
@@ -102,12 +103,29 @@ class AttendanceController {
 
             const attendance = await Employee.findBySerialId(serial_id);
             if (!attendance) {
-                return this.sendDataToAntares({
-                    success: false,
-                    message: 'Employee not found',
-                    serial_id: null,
-                    device_code
-                }, res);
+
+                // Check if the serial ID is already in the unknownSerialId table
+                const chechUnknownSerialId = await unknownSerialId.findBySerialId(serial_id);
+                if(chechUnknownSerialId) {
+                    return this.sendDataToAntares({
+                        success: false,
+                        message: 'your serial id is pending to register, please contact the admin',
+                        serial_id: null,
+                        device_code
+                    }, res);
+                }
+                // Create a new unknown serial ID record
+
+                const unknownId = await unknownSerialId.create({ serial_id, status : 'pending', note : `Unknown serial id from ${device_code}` });
+
+                if(unknownId) {
+                    return this.sendDataToAntares({
+                        success: false,
+                        message: 'Unknown serial id, please contact the admin',
+                        serial_id: null,
+                        device_code
+                    }, res);
+                }
             }
             console.log(attendance);
             this.createOrUpdate(attendance.id, time, device_code, res);
